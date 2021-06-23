@@ -14,10 +14,12 @@ import {
     MangaTile,
     Tag,
     RequestHeaders,
-    ContentRating
+    ContentRating,
+    TagSection
 } from 'paperback-extensions-common'
 
 import entities from 'entities'
+import tagJSON from './external/tag.json'
 
 const MANGADEX_DOMAIN = 'https://mangadex.org'
 const MANGADEX_API = 'https://api.mangadex.org'
@@ -103,6 +105,25 @@ export class MangaDex extends Source {
         return {
             referer: `${MANGADEX_DOMAIN}/`
         }
+    }
+
+    override getTags(): Promise<TagSection[]> {
+        const sections: Record<string, TagSection> = {}
+
+        for(const tag of tagJSON) {
+            const group = tag.data.attributes.group
+
+            if(sections[group] == null) {
+                sections[group] = createTagSection({
+                    id: group,
+                    label: group.charAt(0).toUpperCase() + group.slice(1),
+                    tags: []
+                })
+            }
+            sections[group]?.tags.push(createTag({id: tag.data.id, label: tag.data.attributes.name.en}))
+        }
+
+        return Promise.resolve(Object.values(sections))
     }
 
     async getMangaUUIDs(numericIds: string[]): Promise<{[id: string]: string}> {
