@@ -33,7 +33,7 @@ export const MangaDexInfo: SourceInfo = {
     version: '1.1.0',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
-    contentRating: ContentRating.MATURE,
+    contentRating: ContentRating.EVERYONE,
     language: LanguageCode.ENGLISH,
     sourceTags: [
         {
