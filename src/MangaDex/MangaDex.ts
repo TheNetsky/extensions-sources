@@ -15,10 +15,20 @@ import {
     Tag,
     RequestHeaders,
     ContentRating,
-    TagSection
+    TagSection,
+    Section
 } from 'paperback-extensions-common'
 
-import entities from 'entities'
+import entities = require('entities')
+import {
+    contentSettings,
+    getLanguages,
+    getDemographics
+} from './MangaDexSettings'
+import {
+    requestMetadata,
+    MDLanguages
+} from './MangaDexHelper'
 import tagJSON from './external/tag.json'
 
 const MANGADEX_DOMAIN = 'https://mangadex.org'
@@ -30,7 +40,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '1.1.0',
+    version: '2.0.0',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -49,53 +59,31 @@ export const MangaDexInfo: SourceInfo = {
 
 export class MangaDex extends Source {
 
-    languageMapping: any = {
-        'en': 'gb',
-        'pt-br': 'pt',
-        'ru': 'ru',
-        'fr': 'fr',
-        'es-la': 'es',
-        'pl': 'pl',
-        'tr': 'tr',
-        'it': 'it',
-        'es': 'es',
-        'id': 'id',
-        'vi': 'vn',
-        'hu': 'hu',
-        'zh': 'cn',
-        'ar': 'sa',
-        'de': 'de',
-        'zh-hk': 'hk',
-        'ca': 'es', // Catalan
-        'th': 'th',
-        'bg': 'bg',
-        'fa': 'ir',
-        'uk': 'ua',
-        'mn': 'mn',
-        'he': 'il',
-        'ro': 'ro',
-        'ms': 'my',
-        'tl': 'ph',
-        'ja': 'jp',
-        'ko': 'kr',
-        'hi': 'in',
-        'my': 'my',
-        'cs': 'cz',
-        'pt': 'pt',
-        'nl': 'nl',
-        'sv': 'se',
-        'bn': 'bd',
-        'no': 'no',
-        'lt': 'lt',
-        'sr': 'rs',
-        'da': 'dk',
-        'fi': 'fi',
-    }
-
     requestManager = createRequestManager({
         requestsPerSecond: 4,
         requestTimeout: 15000,
     })
+
+    stateManager = createSourceStateManager({})
+
+    override async getSourceMenu(): Promise<Section> {
+        return Promise.resolve(createSection({
+            id: 'main',
+            header: 'Source Settings',
+            rows: () => Promise.resolve([
+                contentSettings(this.stateManager),
+                createButton({
+                    id: 'clear',
+                    label: 'Clear States',
+                    value: '',
+                    onTap: () => {
+                        this.stateManager.store('languages', null),
+                        this.stateManager.store('demographics', null)
+                    }
+                })
+            ])
+        }))
+    }
 
     override getMangaShareUrl(mangaId: string): string {
         return `${MANGADEX_DOMAIN}/title/${mangaId}`
@@ -144,7 +132,7 @@ export class MangaDex extends Source {
             offset += 500
     
             const response = await this.requestManager.schedule(request, 1)
-            const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+            const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
             for (const mapping of json) {
                 UUIDsDict[mapping.data.attributes.legacyId] = mapping.data.attributes.newId
@@ -154,15 +142,6 @@ export class MangaDex extends Source {
         return UUIDsDict
     }
 
-    async convertLegacyIdToUUID(legacyId: string): Promise<string> {
-        const uuid = (await this.getMangaUUIDs([legacyId]))[legacyId]
-        if(uuid != null) {
-            return uuid
-        } else {
-            throw new Error('Could not convert mangaId to UUID')
-        }
-    }
-
     async getMDHNodeURL(chapterId: string): Promise<string> {
         const request = createRequestObject({
             url: `${MANGADEX_API}/at-home/server/${chapterId}`,
@@ -170,7 +149,7 @@ export class MangaDex extends Source {
         })
     
         const response = await this.requestManager.schedule(request, 1)
-        const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         return json.baseUrl
     }
@@ -182,27 +161,24 @@ export class MangaDex extends Source {
         })
     
         const response = await this.requestManager.schedule(request, 1)
-        const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         return `${MANGADEX_API}/manga?limit=100&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art&ids[]=${json.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id).join('&ids[]=')}`
     }
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
-        let newMangaId: string
         if (!mangaId.includes('-')) {
             // Legacy Id
-            newMangaId = await this.convertLegacyIdToUUID(mangaId)
-        } else {
-            newMangaId = mangaId
+            throw new Error('OLD ID: PLEASE MIGRATE')
         }
 
         const request = createRequestObject({
-            url: `${MANGADEX_API}/manga/${newMangaId}?includes[]=author&includes[]=artist&includes[]=cover_art`,
+            url: `${MANGADEX_API}/manga/${mangaId}?includes[]=author&includes[]=artist&includes[]=cover_art`,
             method: 'GET',
         })
     
         const response = await this.requestManager.schedule(request, 1)
-        const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         const mangaDetails = json.data.attributes
         const titles = [
@@ -230,7 +206,7 @@ export class MangaDex extends Source {
         const coverFileName = json.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
         let image: string
         if (coverFileName) {
-            image = `${COVER_BASE_URL}/${newMangaId}/${coverFileName}`
+            image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}`
         } else {
             image = 'https://i.imgur.com/6TrIues.jpg'
         }
@@ -253,13 +229,12 @@ export class MangaDex extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        let newMangaId: string
         if (!mangaId.includes('-')) {
             // Legacy Id
-            newMangaId = await this.convertLegacyIdToUUID(mangaId)
-        } else {
-            newMangaId = mangaId
+            throw new Error('OLD ID: PLEASE MIGRATE')
         }
+
+        const languages: string[] = await getLanguages(this.stateManager)
 
         const chapters: Chapter[] = []
         let offset = 0
@@ -267,14 +242,14 @@ export class MangaDex extends Source {
         let hasResults = true
         while (hasResults) {
             const request = createRequestObject({
-                url: `${MANGADEX_API}/manga/${newMangaId}/feed?limit=500&offset=${offset}&includes[]=scanlation_group`,
+                url: `${MANGADEX_API}/manga/${mangaId}/feed?limit=500&offset=${offset}&includes[]=scanlation_group&translatedLanguage[]=${languages.join('&translatedLanguage[]=')}`,
                 method: 'GET',
             })
             const response = await this.requestManager.schedule(request, 1)
-            const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+            const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
             offset += 500
 
-            if(json.results === undefined) throw new Error(`Failed to parse json results for ${newMangaId}`)
+            if(json.results === undefined) throw new Error(`Failed to parse json results for ${mangaId}`)
 
             for (const chapter of json.results) {
                 const chapterId = chapter.data.id
@@ -282,12 +257,7 @@ export class MangaDex extends Source {
                 const name =  this.decodeHTMLEntity(chapterDetails.title)
                 const chapNum = Number(chapterDetails?.chapter)
                 const volume = Number(chapterDetails?.volume)
-                let langCode = chapterDetails.translatedLanguage
-                if (Object.keys(this.languageMapping).includes(langCode)) {
-                    langCode = this.languageMapping[chapterDetails.translatedLanguage]
-                } else {
-                    langCode = '_unknown'
-                }
+                const langCode: any = MDLanguages.getPBCode(chapterDetails.translatedLanguage)
 
                 const time = new Date(chapterDetails.publishAt)
 
@@ -327,7 +297,7 @@ export class MangaDex extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1)
-        const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         const chapterDetails = json.data.attributes
         const pages = chapterDetails.data.map(
@@ -342,12 +312,13 @@ export class MangaDex extends Source {
         })
     }
 
-    async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
+    async searchRequest(query: SearchRequest, metadata: requestMetadata): Promise<PagedResults> {
+        const demographics: string[] = await getDemographics(this.stateManager)
         const offset: number = metadata?.offset ?? 0
         const results: MangaTile[] = []
 
         const request = createRequestObject({
-            url: `${MANGADEX_API}/manga?title=${encodeURIComponent(query.title ?? '')}&limit=100&offset=${offset}&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art`,
+            url: `${MANGADEX_API}/manga?title=${encodeURIComponent(query.title ?? '')}&limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`,
             method: 'GET',
         })
 
@@ -356,7 +327,7 @@ export class MangaDex extends Source {
             return createPagedResults({results})
         }
 
-        const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         if(json.results === undefined) {throw new Error('Failed to parse json for the given search')}
 
@@ -386,6 +357,8 @@ export class MangaDex extends Source {
     }
 
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+        const demographics: string[] = await getDemographics(this.stateManager)
+
         const sections = [
             {
                 request: createRequestObject({
@@ -400,7 +373,7 @@ export class MangaDex extends Source {
             },
             {
                 request: createRequestObject({
-                    url: `${MANGADEX_API}/manga?limit=20&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art`,
+                    url: `${MANGADEX_API}/manga?limit=20&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`,
                     method: 'GET',
                 }),
                 section: createHomeSection({
@@ -411,7 +384,7 @@ export class MangaDex extends Source {
             },
             {
                 request: createRequestObject({
-                    url: `${MANGADEX_API}/manga?limit=20&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art&order[updatedAt]=desc`,
+                    url: `${MANGADEX_API}/manga?limit=20&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art&order[updatedAt]=desc`,
                     method: 'GET',
                 }),
                 section: createHomeSection({
@@ -430,7 +403,7 @@ export class MangaDex extends Source {
             // Get the section data
             promises.push(
                 this.requestManager.schedule(section.request, 1).then(async response => {
-                    const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+                    const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
                     const results = []
 
                     if(json.results === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
@@ -464,10 +437,11 @@ export class MangaDex extends Source {
         await Promise.all(promises)
     }
 
-    override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+    override async getViewMoreItems(homepageSectionId: string, metadata: requestMetadata): Promise<PagedResults> {
         const offset: number = metadata?.offset ?? 0
         const collectedIds: string[] = metadata?.collectedIds ?? []
         const results: MangaTile[] = []
+        const demographics: string[] = await getDemographics(this.stateManager)
         let url = ''
 
         switch(homepageSectionId) {
@@ -476,11 +450,11 @@ export class MangaDex extends Source {
                 break
             }
             case 'popular': {
-                url = `${MANGADEX_API}/manga?limit=100&offset=${offset}&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art`
+                url = `${MANGADEX_API}/manga?limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`
                 break
             }
             case 'recently_updated': {
-                url = `${MANGADEX_API}/manga?limit=100&offset=${offset}&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art&order[updatedAt]=desc`
+                url = `${MANGADEX_API}/manga?limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art&order[updatedAt]=desc`
                 break
             }
         }
@@ -491,7 +465,7 @@ export class MangaDex extends Source {
         })
 
         const response = await this.requestManager.schedule(request, 1)
-        const json = typeof response.data === 'string' ? JSON.parse(response.data) : response.data
+        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         if(json.results === undefined) throw new Error('Failed to parse json results for getViewMoreItems')
 
