@@ -670,7 +670,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.0',
+    version: '2.0.1',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -982,8 +982,8 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     }),
                     section: createHomeSection({
                         id: 'featured',
-                        title: 'FEATURED TITLES',
-                        view_more: true,
+                        title: 'Seasonal',
+                        type: paperback_extensions_common_1.HomeSectionType.featured
                     }),
                 },
                 {
@@ -993,7 +993,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     }),
                     section: createHomeSection({
                         id: 'popular',
-                        title: 'POPULAR TITLES',
+                        title: 'Popular',
                         view_more: true,
                     }),
                 },
@@ -1004,7 +1004,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     }),
                     section: createHomeSection({
                         id: 'recently_updated',
-                        title: 'RECENTLY UPDATED TITLES',
+                        title: 'Recently Updated',
                         view_more: true,
                     }),
                 },
