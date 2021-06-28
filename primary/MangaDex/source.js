@@ -724,20 +724,23 @@ class MangaDex extends paperback_extensions_common_1.Source {
         };
     }
     getTags() {
-        var _a;
-        const sections = {};
-        for (const tag of tag_json_1.default) {
-            const group = tag.data.attributes.group;
-            if (sections[group] == null) {
-                sections[group] = createTagSection({
-                    id: group,
-                    label: group.charAt(0).toUpperCase() + group.slice(1),
-                    tags: []
-                });
+        var _a, _b;
+        return __awaiter(this, void 0, void 0, function* () {
+            const sections = {};
+            for (const tag of tag_json_1.default) {
+                const group = tag.data.attributes.group;
+                if (sections[group] == null) {
+                    sections[group] = createTagSection({
+                        id: group,
+                        label: group.charAt(0).toUpperCase() + group.slice(1),
+                        tags: []
+                    });
+                }
+                const tagObject = createTag({ id: tag.data.id, label: tag.data.attributes.name.en });
+                sections[group].tags = [...(_b = (_a = sections[group]) === null || _a === void 0 ? void 0 : _a.tags) !== null && _b !== void 0 ? _b : [], tagObject];
             }
-            (_a = sections[group]) === null || _a === void 0 ? void 0 : _a.tags.push(createTag({ id: tag.data.id, label: tag.data.attributes.name.en }));
-        }
-        return Promise.resolve(Object.values(sections));
+            return Object.values(sections);
+        });
     }
     getMangaUUIDs(numericIds) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -915,13 +918,25 @@ class MangaDex extends paperback_extensions_common_1.Source {
         });
     }
     searchRequest(query, metadata) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e;
         return __awaiter(this, void 0, void 0, function* () {
             const demographics = yield MangaDexSettings_1.getDemographics(this.stateManager);
             const offset = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.offset) !== null && _a !== void 0 ? _a : 0;
             const results = [];
+            const url = new URLBuilder(MANGADEX_API)
+                .addPathComponent('manga')
+                .addQueryParameter('title', ((_c = (_b = query.title) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0) > 0 ? encodeURIComponent(query.title) : undefined)
+                .addQueryParameter('limit', 100)
+                .addQueryParameter('offset', offset)
+                .addQueryParameter('contentRating', demographics)
+                .addQueryParameter('includes', ['cover_art'])
+                .addQueryParameter('includedTags', (_d = query.includedTags) === null || _d === void 0 ? void 0 : _d.map(x => x.id))
+                .addQueryParameter('includedTagsMode', query.includeOperator)
+                .addQueryParameter('excludedTags', (_e = query.excludedTags) === null || _e === void 0 ? void 0 : _e.map(x => x.id))
+                .addQueryParameter('excludedTagsMode', query.excludeOperator)
+                .buildUrl();
             const request = createRequestObject({
-                url: `${MANGADEX_API}/manga?title=${encodeURIComponent((_b = query.title) !== null && _b !== void 0 ? _b : '')}&limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`,
+                url: url,
                 method: 'GET',
             });
             const response = yield this.requestManager.schedule(request, 1);
@@ -1142,6 +1157,35 @@ class MangaDex extends paperback_extensions_common_1.Source {
     }
 }
 exports.MangaDex = MangaDex;
+class URLBuilder {
+    constructor(baseUrl) {
+        this.parameters = {};
+        this.pathComponents = [];
+        this.baseUrl = baseUrl.replace(/(^\/)?(?=.*)(\/$)?/gim, '');
+    }
+    addPathComponent(component) {
+        this.pathComponents.push(component.replace(/(^\/)?(?=.*)(\/$)?/gim, ''));
+        return this;
+    }
+    addQueryParameter(key, value) {
+        if (Array.isArray(value)) {
+            for (const x of value) {
+                this.parameters[key + '[]'] = x;
+            }
+        }
+        else {
+            this.parameters[key] = value;
+        }
+        return this;
+    }
+    buildUrl({ addTrailingSlash, includeUndefinedParameters } = { addTrailingSlash: false, includeUndefinedParameters: false }) {
+        return this.baseUrl + '/'
+            + this.pathComponents.join('/')
+            + (addTrailingSlash ? '/' : '')
+            + (Object.values(this.parameters).length > 0 ? '?' : '')
+            + Object.entries(this.parameters).map(x => x[1] != null || includeUndefinedParameters ? `${x[0]}=${x[1]}` : undefined).filter(x => x !== undefined).join('&');
+    }
+}
 
 },{"./MangaDexHelper":55,"./MangaDexSettings":56,"./external/tag.json":57,"entities":5,"paperback-extensions-common":13}],55:[function(require,module,exports){
 "use strict";
