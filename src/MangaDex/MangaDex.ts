@@ -16,7 +16,8 @@ import {
     RequestHeaders,
     ContentRating,
     TagSection,
-    Section
+    Section,
+    SearchOperator
 } from 'paperback-extensions-common'
 
 import entities = require('entities')
@@ -95,7 +96,7 @@ export class MangaDex extends Source {
         }
     }
 
-    override getTags(): Promise<TagSection[]> {
+    override async getTags(): Promise<TagSection[]> {
         const sections: Record<string, TagSection> = {}
 
         for(const tag of tagJSON) {
@@ -108,10 +109,11 @@ export class MangaDex extends Source {
                     tags: []
                 })
             }
-            sections[group]?.tags.push(createTag({id: tag.data.id, label: tag.data.attributes.name.en}))
+            const tagObject = createTag({id: tag.data.id, label: tag.data.attributes.name.en})
+            sections[group]!.tags = [...sections[group]?.tags ?? [], tagObject]
         }
 
-        return Promise.resolve(Object.values(sections))
+        return Object.values(sections)
     }
 
     async getMangaUUIDs(numericIds: string[]): Promise<{[id: string]: string}> {
@@ -317,8 +319,21 @@ export class MangaDex extends Source {
         const offset: number = metadata?.offset ?? 0
         const results: MangaTile[] = []
 
+        const url = new URLBuilder(MANGADEX_API)
+            .addPathComponent('manga')
+            .addQueryParameter('title', (query.title?.length ?? 0) > 0 ? encodeURIComponent(query.title!) : undefined)
+            .addQueryParameter('limit', 100)
+            .addQueryParameter('offset', offset)
+            .addQueryParameter('contentRating', demographics)
+            .addQueryParameter('includes', ['cover_art'])
+            .addQueryParameter('includedTags', query.includedTags?.map(x => x.id))
+            .addQueryParameter('includedTagsMode', query.includeOperator)
+            .addQueryParameter('excludedTags', query.excludedTags?.map(x => x.id))
+            .addQueryParameter('excludedTagsMode', query.excludeOperator)
+            .buildUrl()
+
         const request = createRequestObject({
-            url: `${MANGADEX_API}/manga?title=${encodeURIComponent(query.title ?? '')}&limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`,
+            url: url,
             method: 'GET',
         })
 
@@ -559,5 +574,38 @@ export class MangaDex extends Source {
 
     decodeHTMLEntity(str: string): string {
         return entities.decodeHTML(str)
+    }
+}
+
+class URLBuilder {
+    parameters: Record<string, any> = {}
+    pathComponents: string[] = []
+    baseUrl: string
+    constructor(baseUrl: string) {
+        this.baseUrl = baseUrl.replace(/(^\/)?(?=.*)(\/$)?/gim, '')
+    }
+
+    addPathComponent(component: string): URLBuilder {
+        this.pathComponents.push(component.replace(/(^\/)?(?=.*)(\/$)?/gim, ''))
+        return this
+    }
+
+    addQueryParameter(key: string, value: any | any[]): URLBuilder {
+        if(Array.isArray(value)) {
+            for(const x of value) {
+                this.parameters[key + '[]'] = x
+            }
+        } else {
+            this.parameters[key] = value
+        }
+        return this
+    }
+
+    buildUrl({addTrailingSlash, includeUndefinedParameters}: {addTrailingSlash: boolean, includeUndefinedParameters: boolean} = {addTrailingSlash: false, includeUndefinedParameters: false}): string {
+        return this.baseUrl + '/'
+         + this.pathComponents.join('/')
+          + (addTrailingSlash ? '/' : '')
+           + (Object.values(this.parameters).length > 0 ? '?' : '')
+            + Object.entries(this.parameters).map(x => x[1] != null || includeUndefinedParameters ? `${x[0]}=${x[1]}` : undefined).filter(x => x !== undefined).join('&')
     }
 }
