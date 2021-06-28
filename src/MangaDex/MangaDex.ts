@@ -17,7 +17,8 @@ import {
     ContentRating,
     TagSection,
     Section,
-    SearchOperator
+    SearchOperator,
+    HomeSectionType
 } from 'paperback-extensions-common'
 
 import entities = require('entities')
@@ -41,7 +42,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.0',
+    version: '2.0.1',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -382,8 +383,8 @@ export class MangaDex extends Source {
                 }),
                 section: createHomeSection({
                     id: 'featured',
-                    title: 'FEATURED TITLES',
-                    view_more: true,
+                    title: 'Seasonal',
+                    type: HomeSectionType.featured
                 }),
             },
             {
@@ -393,7 +394,7 @@ export class MangaDex extends Source {
                 }),
                 section: createHomeSection({
                     id: 'popular',
-                    title: 'POPULAR TITLES',
+                    title: 'Popular',
                     view_more: true,
                 }),
             },
@@ -404,7 +405,7 @@ export class MangaDex extends Source {
                 }),
                 section: createHomeSection({
                     id: 'recently_updated',
-                    title: 'RECENTLY UPDATED TITLES',
+                    title: 'Recently Updated',
                     view_more: true,
                 }),
             },
