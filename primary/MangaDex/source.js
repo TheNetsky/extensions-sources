@@ -670,7 +670,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.1',
+    version: '2.0.2',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -1481,12 +1481,12 @@ class URLBuilder {
         return this;
     }
     buildUrl({ addTrailingSlash, includeUndefinedParameters } = { addTrailingSlash: false, includeUndefinedParameters: false }) {
-        let finalUrl = this.baseUrl;
+        let finalUrl = this.baseUrl + '/';
         finalUrl += this.pathComponents.join('/');
         finalUrl += addTrailingSlash ? '/' : '';
         finalUrl += Object.values(this.parameters).length > 0 ? '?' : '';
         finalUrl += Object.entries(this.parameters).map(entry => {
-            if (entry[1] == null && includeUndefinedParameters) {
+            if (entry[1] == null && !includeUndefinedParameters) {
                 return undefined;
             }
             if (Array.isArray(entry[1])) {
