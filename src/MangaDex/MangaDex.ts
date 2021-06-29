@@ -29,7 +29,8 @@ import {
 } from './MangaDexSettings'
 import {
     requestMetadata,
-    MDLanguages
+    MDLanguages,
+    URLBuilder
 } from './MangaDexHelper'
 import tagJSON from './external/tag.json'
 
@@ -575,38 +576,5 @@ export class MangaDex extends Source {
 
     decodeHTMLEntity(str: string): string {
         return entities.decodeHTML(str)
-    }
-}
-
-class URLBuilder {
-    parameters: Record<string, any> = {}
-    pathComponents: string[] = []
-    baseUrl: string
-    constructor(baseUrl: string) {
-        this.baseUrl = baseUrl.replace(/(^\/)?(?=.*)(\/$)?/gim, '')
-    }
-
-    addPathComponent(component: string): URLBuilder {
-        this.pathComponents.push(component.replace(/(^\/)?(?=.*)(\/$)?/gim, ''))
-        return this
-    }
-
-    addQueryParameter(key: string, value: any | any[]): URLBuilder {
-        if(Array.isArray(value)) {
-            for(const x of value) {
-                this.parameters[key + '[]'] = x
-            }
-        } else {
-            this.parameters[key] = value
-        }
-        return this
-    }
-
-    buildUrl({addTrailingSlash, includeUndefinedParameters}: {addTrailingSlash: boolean, includeUndefinedParameters: boolean} = {addTrailingSlash: false, includeUndefinedParameters: false}): string {
-        return this.baseUrl + '/'
-         + this.pathComponents.join('/')
-          + (addTrailingSlash ? '/' : '')
-           + (Object.values(this.parameters).length > 0 ? '?' : '')
-            + Object.entries(this.parameters).map(x => x[1] != null || includeUndefinedParameters ? `${x[0]}=${x[1]}` : undefined).filter(x => x !== undefined).join('&')
     }
 }
