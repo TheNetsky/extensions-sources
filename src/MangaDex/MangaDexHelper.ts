@@ -346,14 +346,14 @@ export class URLBuilder {
         return this
     }
 
-    buildUrl({addTrailingSlash, includeUndefinedParameters}: {addTrailingSlash: boolean, includeUndefinedParameters: boolean} = {addTrailingSlash: false, includeUndefinedParameters: false}): string {
-        let finalUrl = this.baseUrl
+    buildUrl({addTrailingSlash, includeUndefinedParameters} = {addTrailingSlash: false, includeUndefinedParameters: false}): string {
+        let finalUrl = this.baseUrl + '/'
 
         finalUrl += this.pathComponents.join('/')
         finalUrl += addTrailingSlash ? '/' : ''
         finalUrl += Object.values(this.parameters).length > 0 ? '?' : ''
         finalUrl += Object.entries(this.parameters).map(entry => {
-            if (entry[1] == null && includeUndefinedParameters) { return undefined }
+            if (entry[1] == null && !includeUndefinedParameters) { return undefined }
 
             if(Array.isArray(entry[1])){
                 return entry[1].map(value => value || includeUndefinedParameters ? `${entry[0]}[]=${value}` : undefined)
