@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface requestMetadata {
     offset?: number,
     collectedIds?: string[]
@@ -301,7 +302,6 @@ class MDDemographicsClass {
         {
             name: 'Suggestive',
             enum: 'suggestive',
-            default: true
         },
         {
             name: 'Erotica',
@@ -318,7 +318,7 @@ class MDDemographicsClass {
     }
 
     getName(demographicEnum: string): string {
-        return this.Demographics.filter(Demographic => Demographic.enum == demographicEnum)[0]?.name ?? 'Unknown Demographic'
+        return this.Demographics.filter(Demographic => Demographic.enum == demographicEnum)[0]?.name ?? ''
     }
 
     getDefault(): string[] {
@@ -355,9 +355,14 @@ export class URLBuilder {
         finalUrl += Object.entries(this.parameters).map(entry => {
             if (entry[1] == null && !includeUndefinedParameters) { return undefined }
 
-            if(Array.isArray(entry[1])){
+            if (Array.isArray(entry[1])) {
                 return entry[1].map(value => value || includeUndefinedParameters ? `${entry[0]}[]=${value}` : undefined)
                     .filter(x => x !== undefined)
+                    .join('&')
+            }
+
+            if (typeof entry[1] === 'object') {
+                return Object.keys(entry[1]).map(key => `${entry[0]}[${key}]=${entry[1][key]}`)
                     .join('&')
             }
 
@@ -367,3 +372,50 @@ export class URLBuilder {
         return finalUrl
     }
 }
+
+interface ImageQuality {
+    name: string,
+    enum: string,
+    ending: string,
+    default?: string[]
+}
+
+class MDImageQualityClass {
+    ImageQualities: ImageQuality[] = [
+        {
+            name: 'Source (Original/Best)',
+            enum: 'source',
+            ending: '',
+            default: ['manga']
+        },
+        {
+            name: '<= 512px',
+            enum: '512',
+            ending: '.512.jpg'
+        },
+        {
+            name: '<= 256px',
+            enum: '256',
+            ending: '.256.jpg',
+            default: ['homepage', 'search']
+        }
+    ]
+
+    getEnumList() {
+        return this.ImageQualities.map(ImageQuality => ImageQuality.enum)
+    }
+
+    getName(imageQualityEnum: string): string {
+        return this.ImageQualities.filter(ImageQuality => ImageQuality.enum == imageQualityEnum)[0]?.name ?? ''
+    }
+
+    getEnding(imageQualityEnum: string): string {
+        return this.ImageQualities.filter(ImageQuality => ImageQuality.enum == imageQualityEnum)[0]?.ending ?? ''
+    }
+
+    getDefault(section: string): string{
+        return this.ImageQualities.filter(ImageQuality => ImageQuality.default?.includes(section)).map(ImageQuality => ImageQuality.enum)[0] ?? ''
+    }
+}
+
+export const MDImageQuality = new MDImageQualityClass

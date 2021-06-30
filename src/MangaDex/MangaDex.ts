@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
     PagedResults,
     Source,
@@ -17,20 +18,29 @@ import {
     ContentRating,
     TagSection,
     Section,
-    SearchOperator,
-    HomeSectionType
+    HomeSectionType,
+    MangaUpdates
 } from 'paperback-extensions-common'
 
 import entities = require('entities')
 import {
     contentSettings,
     getLanguages,
-    getDemographics
+    getDemographics,
+    thumbnailSettings,
+    getHomepageThumbnail,
+    getSearchThumbnail,
+    getMangaThumbnail,
+    resetSettings,
+    getDataSaver,
+    getSkipSameChapter,
 } from './MangaDexSettings'
 import {
     requestMetadata,
     MDLanguages,
-    URLBuilder
+    URLBuilder,
+    MDDemographics,
+    MDImageQuality
 } from './MangaDexHelper'
 import tagJSON from './external/tag.json'
 
@@ -75,15 +85,8 @@ export class MangaDex extends Source {
             header: 'Source Settings',
             rows: () => Promise.resolve([
                 contentSettings(this.stateManager),
-                createButton({
-                    id: 'clear',
-                    label: 'Clear States',
-                    value: '',
-                    onTap: () => {
-                        this.stateManager.store('languages', null),
-                        this.stateManager.store('demographics', null)
-                    }
-                })
+                thumbnailSettings(this.stateManager),
+                resetSettings(this.stateManager),
             ])
         }))
     }
@@ -118,34 +121,6 @@ export class MangaDex extends Source {
         return Object.values(sections)
     }
 
-    async getMangaUUIDs(numericIds: string[]): Promise<{[id: string]: string}> {
-        const length = numericIds.length
-        let offset = 0
-        const UUIDsDict:{[id: string]: string} = {}
-
-        while (offset < length) {
-            const request = createRequestObject({
-                url: `${MANGADEX_API}/legacy/mapping`,
-                method: 'POST',
-                headers: {'content-type': 'application/json'},
-                data: {
-                    'type': 'manga',
-                    'ids': numericIds.slice(offset, offset + 500).map(x => Number(x))
-                }
-            })
-            offset += 500
-    
-            const response = await this.requestManager.schedule(request, 1)
-            const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
-
-            for (const mapping of json) {
-                UUIDsDict[mapping.data.attributes.legacyId] = mapping.data.attributes.newId
-            }
-        }
-
-        return UUIDsDict
-    }
-
     async getMDHNodeURL(chapterId: string): Promise<string> {
         const request = createRequestObject({
             url: `${MANGADEX_API}/at-home/server/${chapterId}`,
@@ -158,7 +133,7 @@ export class MangaDex extends Source {
         return json.baseUrl
     }
 
-    async getCustomListRequestURL(listId: string): Promise<string> {
+    async getCustomListRequestURL(listId: string, demographics: string[]): Promise<string> {
         const request = createRequestObject({
             url: `${MANGADEX_API}/list/${listId}`,
             method: 'GET',
@@ -167,7 +142,13 @@ export class MangaDex extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        return `${MANGADEX_API}/manga?limit=100&contentRating[]=none&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art&ids[]=${json.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id).join('&ids[]=')}`
+        return new URLBuilder(MANGADEX_API)
+            .addPathComponent('manga')
+            .addQueryParameter('limit', 100)
+            .addQueryParameter('contentRating', demographics)
+            .addQueryParameter('includes', ['cover_art'])
+            .addQueryParameter('ids', json.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id))
+            .buildUrl()
     }
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
@@ -177,7 +158,11 @@ export class MangaDex extends Source {
         }
 
         const request = createRequestObject({
-            url: `${MANGADEX_API}/manga/${mangaId}?includes[]=author&includes[]=artist&includes[]=cover_art`,
+            url: new URLBuilder(MANGADEX_API)
+                .addPathComponent('manga')
+                .addPathComponent(mangaId)
+                .addQueryParameter('includes', ['author', 'artist', 'cover_art'])
+                .buildUrl(),
             method: 'GET',
         })
     
@@ -210,9 +195,9 @@ export class MangaDex extends Source {
         const coverFileName = json.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
         let image: string
         if (coverFileName) {
-            image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}`
+            image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}${MDImageQuality.getEnding(await getMangaThumbnail(this.stateManager))}`
         } else {
-            image = 'https://i.imgur.com/6TrIues.jpg'
+            image = 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg'
         }
 
         return createManga({
@@ -239,14 +224,26 @@ export class MangaDex extends Source {
         }
 
         const languages: string[] = await getLanguages(this.stateManager)
+        const skipSameChapter = await getSkipSameChapter(this.stateManager)
+        const collectedChapters: string[] = []
 
         const chapters: Chapter[] = []
         let offset = 0
+        let sortingIndex = 0
 
         let hasResults = true
         while (hasResults) {
             const request = createRequestObject({
-                url: `${MANGADEX_API}/manga/${mangaId}/feed?limit=500&offset=${offset}&includes[]=scanlation_group&translatedLanguage[]=${languages.join('&translatedLanguage[]=')}`,
+                url: new URLBuilder(MANGADEX_API)
+                    .addPathComponent('manga')
+                    .addPathComponent(mangaId)
+                    .addPathComponent('feed')
+                    .addQueryParameter('limit', 500)
+                    .addQueryParameter('offset', offset)
+                    .addQueryParameter('includes', ['scanlation_group'])
+                    .addQueryParameter('translatedLanguage', languages)
+                    .addQueryParameter('order', {'volume': 'desc', 'chapter': 'desc'})
+                    .buildUrl(),
                 method: 'GET',
             })
             const response = await this.requestManager.schedule(request, 1)
@@ -262,21 +259,27 @@ export class MangaDex extends Source {
                 const chapNum = Number(chapterDetails?.chapter)
                 const volume = Number(chapterDetails?.volume)
                 const langCode: any = MDLanguages.getPBCode(chapterDetails.translatedLanguage)
-
                 const time = new Date(chapterDetails.publishAt)
-
                 const group = chapter.relationships.filter((x: any) => x.type == 'scanlation_group').map((x: any) => x.attributes.name).join(', ')
 
-                chapters.push(createChapter({
-                    id: chapterId,
-                    mangaId: mangaId,
-                    name,
-                    chapNum,
-                    volume,
-                    langCode,
-                    group,
-                    time
-                }))
+                const identifier = `${volume}-${chapNum}-${chapterDetails.translatedLanguage}`
+                if (!collectedChapters.includes(identifier) || !skipSameChapter) {
+                    chapters.push(createChapter({
+                        id: chapterId,
+                        mangaId: mangaId,
+                        name,
+                        chapNum,
+                        volume,
+                        langCode,
+                        group,
+                        time,
+                        // @ts-ignore
+                        sortingIndex
+                    }))
+
+                    sortingIndex--
+                    collectedChapters.push(identifier)
+                }
             }
 
             if (json.total <= offset) {
@@ -294,6 +297,7 @@ export class MangaDex extends Source {
         }
 
         const serverUrl = await this.getMDHNodeURL(chapterId)
+        const dataSaver = await getDataSaver(this.stateManager)
 
         const request = createRequestObject({
             url: `${MANGADEX_API}/chapter/${chapterId}`,
@@ -304,9 +308,17 @@ export class MangaDex extends Source {
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         const chapterDetails = json.data.attributes
-        const pages = chapterDetails.data.map(
-            (x: string) => `${serverUrl}/data/${chapterDetails.hash}/${x}`
-        )
+
+        let pages: string[]
+        if (dataSaver) {
+            pages = chapterDetails.dataSaver.map(
+                (x: string) => `${serverUrl}/data-saver/${chapterDetails.hash}/${x}`
+            )
+        } else {
+            pages = chapterDetails.data.map(
+                (x: string) => `${serverUrl}/data/${chapterDetails.hash}/${x}`
+            )
+        }
 
         return createChapterDetails({
             id: chapterId,
@@ -320,10 +332,11 @@ export class MangaDex extends Source {
         const demographics: string[] = await getDemographics(this.stateManager)
         const offset: number = metadata?.offset ?? 0
         const results: MangaTile[] = []
+        const searchType = query.title?.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i) ? 'ids[]' : 'title'
 
         const url = new URLBuilder(MANGADEX_API)
             .addPathComponent('manga')
-            .addQueryParameter('title', (query.title?.length ?? 0) > 0 ? encodeURIComponent(query.title!) : undefined)
+            .addQueryParameter(searchType, (query.title?.length ?? 0) > 0 ? encodeURIComponent(query.title!) : undefined)
             .addQueryParameter('limit', 100)
             .addQueryParameter('offset', offset)
             .addQueryParameter('contentRating', demographics)
@@ -355,9 +368,9 @@ export class MangaDex extends Source {
             const coverFileName = manga.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
             let image: string
             if (coverFileName) {
-                image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}.256.jpg`
+                image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}${MDImageQuality.getEnding(await getSearchThumbnail(this.stateManager))}`
             } else {
-                image = 'https://i.imgur.com/6TrIues.jpg'
+                image = 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg'
             }
 
             results.push(createMangaTile({
@@ -379,18 +392,23 @@ export class MangaDex extends Source {
         const sections = [
             {
                 request: createRequestObject({
-                    url: await this.getCustomListRequestURL('8018a70b-1492-4f91-a584-7451d7787f7a'),
+                    url: await this.getCustomListRequestURL('8018a70b-1492-4f91-a584-7451d7787f7a', demographics),
                     method: 'GET',
                 }),
                 section: createHomeSection({
-                    id: 'featured',
+                    id: 'seasonal',
                     title: 'Seasonal',
                     type: HomeSectionType.featured
                 }),
             },
             {
                 request: createRequestObject({
-                    url: `${MANGADEX_API}/manga?limit=20&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`,
+                    url: new URLBuilder(MANGADEX_API)
+                        .addPathComponent('manga')
+                        .addQueryParameter('limit', 20)
+                        .addQueryParameter('contentRating', demographics)
+                        .addQueryParameter('includes', ['cover_art'])
+                        .buildUrl(),
                     method: 'GET',
                 }),
                 section: createHomeSection({
@@ -401,7 +419,13 @@ export class MangaDex extends Source {
             },
             {
                 request: createRequestObject({
-                    url: `${MANGADEX_API}/manga?limit=20&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art&order[updatedAt]=desc`,
+                    url: new URLBuilder(MANGADEX_API)
+                        .addPathComponent('manga')
+                        .addQueryParameter('limit', 20)
+                        .addQueryParameter('contentRating', demographics)
+                        .addQueryParameter('includes', ['cover_art'])
+                        .addQueryParameter('order', {'updatedAt': 'desc'})
+                        .buildUrl(),
                     method: 'GET',
                 }),
                 section: createHomeSection({
@@ -432,9 +456,9 @@ export class MangaDex extends Source {
                         const coverFileName = manga.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
                         let image: string
                         if (coverFileName) {
-                            image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}.256.jpg`
+                            image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}${MDImageQuality.getEnding(await getHomepageThumbnail(this.stateManager))}`
                         } else {
-                            image = 'https://i.imgur.com/6TrIues.jpg'
+                            image = 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg'
                         }
 
                         results.push(createMangaTile({
@@ -462,16 +486,25 @@ export class MangaDex extends Source {
         let url = ''
 
         switch(homepageSectionId) {
-            case 'featured': {
-                url = await this.getCustomListRequestURL('8018a70b-1492-4f91-a584-7451d7787f7a')
-                break
-            }
             case 'popular': {
-                url = `${MANGADEX_API}/manga?limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art`
+                url = new URLBuilder(MANGADEX_API)
+                    .addPathComponent('manga')
+                    .addQueryParameter('limit', 100)
+                    .addQueryParameter('offset', offset)
+                    .addQueryParameter('contentRating', demographics)
+                    .addQueryParameter('includes', ['cover_art'])
+                    .buildUrl()
                 break
             }
             case 'recently_updated': {
-                url = `${MANGADEX_API}/manga?limit=100&offset=${offset}&contentRating[]=${demographics.join('&contentRating[]=')}&includes[]=cover_art&order[updatedAt]=desc`
+                url = new URLBuilder(MANGADEX_API)
+                    .addPathComponent('manga')
+                    .addQueryParameter('limit', 100)
+                    .addQueryParameter('offset', offset)
+                    .addQueryParameter('contentRating', demographics)
+                    .addQueryParameter('includes', ['cover_art'])
+                    .addQueryParameter('order', {'updatedAt': 'desc'})
+                    .buildUrl()
                 break
             }
         }
@@ -493,9 +526,9 @@ export class MangaDex extends Source {
             const coverFileName = manga.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
             let image: string
             if (coverFileName) {
-                image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}.256.jpg`
+                image = `${COVER_BASE_URL}/${mangaId}/${coverFileName}${MDImageQuality.getEnding(await getHomepageThumbnail(this.stateManager))}`
             } else {
-                image = 'https://i.imgur.com/6TrIues.jpg'
+                image = 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg'
             }
 
             if (!collectedIds.includes(mangaId)) {
@@ -514,65 +547,63 @@ export class MangaDex extends Source {
         })
     }
 
-    // async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
-    //   let legacyIds: string[] = ids.filter(x => !x.includes('-'))
-    //   let conversionDict: {[id: string]: string} = {}
-    //   if (legacyIds.length != 0 ) {
-    //     conversionDict = await this.getMangaUUIDs(legacyIds)
-    //     for (const key of Object.keys(conversionDict)) {
-    //       conversionDict[conversionDict[key]] = key
-    //     }
-    //   }
+    override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        let offset = 0
+        const maxRequests = 100
+        let loadNextPage = true
+        let updatedManga: string[] = []
+        const updatedAt = time.toISOString().split('.')[0] // They support a weirdly truncated version of an ISO timestamp
 
-    //   let offset = 0
-    //   let loadNextPage = true
-    //   let updatedManga: string[] = []
-    //   while (loadNextPage) {
+        while (loadNextPage) {
+            const request = createRequestObject({
+                url: new URLBuilder(MANGADEX_API)
+                    .addPathComponent('manga')
+                    .addQueryParameter('limit', 100)
+                    .addQueryParameter('offset', offset)
+                    .addQueryParameter('contentRating', MDDemographics.getEnumList())
+                    .addQueryParameter('order', {'updatedAt': 'desc'})
+                    .buildUrl(),
+                method: 'GET',
+            })
 
-    //     const updatedAt = time.toISOString().substr(0, time.toISOString().length - 5) // They support a weirdly truncated version of an ISO timestamp. A magic number of '5' seems to be always valid
+            const response = await this.requestManager.schedule(request, 1)
 
-    //     const request = createRequestObject({
-    //       url: `${MANGADEX_API}/manga?limit=100&offset=${offset}&updatedAtSince=${updatedAt}`,
-    //       method: 'GET',
-    //     })
+            // If we have no content, there are no updates available
+            if(response.status == 204) {
+                return
+            }
 
-    //     const response = await this.requestManager.schedule(request, 1)
+            const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-    //     // If we have no content, there are no updates available
-    //     if(response.status == 204) {
-    //       return
-    //     }
+            if(json.results === undefined) {
+                // Log this, no need to throw.
+                console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`)
+                return
+            }
 
-    //     const json = typeof response.data === "string" ? JSON.parse(response.data) : response.data
+            for (const manga of json.results) {
+                const mangaId = manga.data.id
+                const mangaTime = new Date(manga.data.attributes.updatedAt)
 
-    //     if(json.results === undefined) {
-    //       // Log this, no need to throw.
-    //       console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`)
-    //       return
-    //     }
+                if (mangaTime <= time) {
+                    loadNextPage = false
+                } else if (ids.includes(mangaId)) {
+                    updatedManga.push(mangaId)
+                }
+            }
 
-    //     for (const manga of json.results) {
-    //       const mangaId = manga.data.id
-    //       const mangaTime = new Date(manga.data.attributes.updatedAt)
-
-    //       if (mangaTime <= time) {
-    //         loadNextPage = false
-    //       } else if (ids.includes(mangaId)) {
-    //         updatedManga.push(mangaId)
-    //       } else if (ids.includes(conversionDict[mangaId])) {
-    //         updatedManga.push(conversionDict[mangaId])
-    //       }
-    //     }
-    //     if (loadNextPage) {
-    //       offset = offset + 100
-    //     }
-    //   }
-    //   if (updatedManga.length > 0) {
-    //     mangaUpdatesFoundCallback(createMangaUpdates({
-    //         ids: updatedManga
-    //     }))
-    //   }
-    // }
+            offset = offset + 100
+            if (json.total <= offset || offset >= 100 * maxRequests) {
+                loadNextPage = false
+            }
+            if (updatedManga.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga
+                }))
+            }
+            updatedManga = []
+        }
+    }
 
     decodeHTMLEntity(str: string): string {
         return entities.decodeHTML(str)
