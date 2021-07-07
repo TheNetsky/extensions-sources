@@ -671,7 +671,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.3',
+    version: '2.0.4',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -837,7 +837,6 @@ class MangaDex extends paperback_extensions_common_1.Source {
             const collectedChapters = [];
             const chapters = [];
             let offset = 0;
-            let sortingIndex = 0;
             let hasResults = true;
             while (hasResults) {
                 const request = createRequestObject({
@@ -878,10 +877,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                             langCode,
                             group,
                             time,
-                            // @ts-ignore
-                            sortingIndex
                         }));
-                        sortingIndex--;
                         collectedChapters.push(identifier);
                     }
                 }
@@ -1129,20 +1125,24 @@ class MangaDex extends paperback_extensions_common_1.Source {
         });
     }
     filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             let offset = 0;
             const maxRequests = 100;
             let loadNextPage = true;
+            let mangaToUpdate = [];
             let updatedManga = [];
             const updatedAt = time.toISOString().split('.')[0]; // They support a weirdly truncated version of an ISO timestamp
+            const languages = yield MangaDexSettings_1.getLanguages(this.stateManager);
             while (loadNextPage) {
                 const request = createRequestObject({
                     url: new MangaDexHelper_1.URLBuilder(MANGADEX_API)
-                        .addPathComponent('manga')
+                        .addPathComponent('chapter')
                         .addQueryParameter('limit', 100)
                         .addQueryParameter('offset', offset)
-                        .addQueryParameter('contentRating', MangaDexHelper_1.MDDemographics.getEnumList())
-                        .addQueryParameter('order', { 'updatedAt': 'desc' })
+                        .addQueryParameter('publishAtSince', updatedAt)
+                        .addQueryParameter('order', { 'publishAt': 'desc' })
+                        .addQueryParameter('translatedLanguage', languages)
                         .buildUrl(),
                     method: 'GET',
                 });
@@ -1157,13 +1157,10 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`);
                     return;
                 }
-                for (const manga of json.results) {
-                    const mangaId = manga.data.id;
-                    const mangaTime = new Date(manga.data.attributes.updatedAt);
-                    if (mangaTime <= time) {
-                        loadNextPage = false;
-                    }
-                    else if (ids.includes(mangaId)) {
+                for (const chapter of json.results) {
+                    const mangaId = (_a = chapter.relationships.filter((x) => x.type == 'manga')[0]) === null || _a === void 0 ? void 0 : _a.id;
+                    if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
+                        mangaToUpdate.push(mangaId);
                         updatedManga.push(mangaId);
                     }
                 }
@@ -1171,12 +1168,12 @@ class MangaDex extends paperback_extensions_common_1.Source {
                 if (json.total <= offset || offset >= 100 * maxRequests) {
                     loadNextPage = false;
                 }
-                if (updatedManga.length > 0) {
+                if (mangaToUpdate.length > 0) {
                     mangaUpdatesFoundCallback(createMangaUpdates({
-                        ids: updatedManga
+                        ids: mangaToUpdate
                     }));
                 }
-                updatedManga = [];
+                mangaToUpdate = [];
             }
         });
     }
