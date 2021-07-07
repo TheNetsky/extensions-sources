@@ -39,7 +39,6 @@ import {
     requestMetadata,
     MDLanguages,
     URLBuilder,
-    MDDemographics,
     MDImageQuality
 } from './MangaDexHelper'
 import tagJSON from './external/tag.json'
@@ -53,7 +52,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.3',
+    version: '2.0.4',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -229,7 +228,6 @@ export class MangaDex extends Source {
 
         const chapters: Chapter[] = []
         let offset = 0
-        let sortingIndex = 0
 
         let hasResults = true
         while (hasResults) {
@@ -273,11 +271,8 @@ export class MangaDex extends Source {
                         langCode,
                         group,
                         time,
-                        // @ts-ignore
-                        sortingIndex
                     }))
 
-                    sortingIndex--
                     collectedChapters.push(identifier)
                 }
             }
@@ -551,17 +546,20 @@ export class MangaDex extends Source {
         let offset = 0
         const maxRequests = 100
         let loadNextPage = true
+        let mangaToUpdate: string[] = []
         let updatedManga: string[] = []
         const updatedAt = time.toISOString().split('.')[0] // They support a weirdly truncated version of an ISO timestamp
+        const languages: string[] = await getLanguages(this.stateManager)
 
         while (loadNextPage) {
             const request = createRequestObject({
                 url: new URLBuilder(MANGADEX_API)
-                    .addPathComponent('manga')
+                    .addPathComponent('chapter')
                     .addQueryParameter('limit', 100)
                     .addQueryParameter('offset', offset)
-                    .addQueryParameter('contentRating', MDDemographics.getEnumList())
-                    .addQueryParameter('order', {'updatedAt': 'desc'})
+                    .addQueryParameter('publishAtSince', updatedAt)
+                    .addQueryParameter('order', {'publishAt': 'desc'})
+                    .addQueryParameter('translatedLanguage', languages)
                     .buildUrl(),
                 method: 'GET',
             })
@@ -581,13 +579,11 @@ export class MangaDex extends Source {
                 return
             }
 
-            for (const manga of json.results) {
-                const mangaId = manga.data.id
-                const mangaTime = new Date(manga.data.attributes.updatedAt)
+            for (const chapter of json.results) {
+                const mangaId = chapter.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
 
-                if (mangaTime <= time) {
-                    loadNextPage = false
-                } else if (ids.includes(mangaId)) {
+                if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
+                    mangaToUpdate.push(mangaId)
                     updatedManga.push(mangaId)
                 }
             }
@@ -596,12 +592,12 @@ export class MangaDex extends Source {
             if (json.total <= offset || offset >= 100 * maxRequests) {
                 loadNextPage = false
             }
-            if (updatedManga.length > 0) {
+            if (mangaToUpdate.length > 0) {
                 mangaUpdatesFoundCallback(createMangaUpdates({
-                    ids: updatedManga
+                    ids: mangaToUpdate
                 }))
             }
-            updatedManga = []
+            mangaToUpdate = []
         }
     }
 
