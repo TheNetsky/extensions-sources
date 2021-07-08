@@ -52,7 +52,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.4',
+    version: '2.0.5',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -228,6 +228,7 @@ export class MangaDex extends Source {
 
         const chapters: Chapter[] = []
         let offset = 0
+        let sortingIndex = 0
 
         let hasResults = true
         while (hasResults) {
@@ -271,9 +272,12 @@ export class MangaDex extends Source {
                         langCode,
                         group,
                         time,
+                        // @ts-ignore
+                        sortingIndex
                     }))
 
                     collectedChapters.push(identifier)
+                    sortingIndex--
                 }
             }
 
@@ -546,8 +550,7 @@ export class MangaDex extends Source {
         let offset = 0
         const maxRequests = 100
         let loadNextPage = true
-        let mangaToUpdate: string[] = []
-        let updatedManga: string[] = []
+        const updatedManga: string[] = []
         const updatedAt = time.toISOString().split('.')[0] // They support a weirdly truncated version of an ISO timestamp
         const languages: string[] = await getLanguages(this.stateManager)
 
@@ -579,6 +582,7 @@ export class MangaDex extends Source {
                 return
             }
 
+            const mangaToUpdate: string[] = []
             for (const chapter of json.results) {
                 const mangaId = chapter.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
 
@@ -597,7 +601,6 @@ export class MangaDex extends Source {
                     ids: mangaToUpdate
                 }))
             }
-            mangaToUpdate = []
         }
     }
 
