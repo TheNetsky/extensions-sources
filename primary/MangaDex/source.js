@@ -671,7 +671,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.4',
+    version: '2.0.5',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -837,6 +837,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
             const collectedChapters = [];
             const chapters = [];
             let offset = 0;
+            let sortingIndex = 0;
             let hasResults = true;
             while (hasResults) {
                 const request = createRequestObject({
@@ -877,8 +878,11 @@ class MangaDex extends paperback_extensions_common_1.Source {
                             langCode,
                             group,
                             time,
+                            // @ts-ignore
+                            sortingIndex
                         }));
                         collectedChapters.push(identifier);
+                        sortingIndex--;
                     }
                 }
                 if (json.total <= offset) {
@@ -1130,8 +1134,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
             let offset = 0;
             const maxRequests = 100;
             let loadNextPage = true;
-            let mangaToUpdate = [];
-            let updatedManga = [];
+            const updatedManga = [];
             const updatedAt = time.toISOString().split('.')[0]; // They support a weirdly truncated version of an ISO timestamp
             const languages = yield MangaDexSettings_1.getLanguages(this.stateManager);
             while (loadNextPage) {
@@ -1157,6 +1160,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`);
                     return;
                 }
+                const mangaToUpdate = [];
                 for (const chapter of json.results) {
                     const mangaId = (_a = chapter.relationships.filter((x) => x.type == 'manga')[0]) === null || _a === void 0 ? void 0 : _a.id;
                     if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
@@ -1173,7 +1177,6 @@ class MangaDex extends paperback_extensions_common_1.Source {
                         ids: mangaToUpdate
                     }));
                 }
-                mangaToUpdate = [];
             }
         });
     }
