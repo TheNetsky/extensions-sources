@@ -52,7 +52,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.5',
+    version: '2.0.6',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -391,7 +391,7 @@ export class MangaDex extends Source {
         const sections = [
             {
                 request: createRequestObject({
-                    url: await this.getCustomListRequestURL('8018a70b-1492-4f91-a584-7451d7787f7a', demographics),
+                    url: await this.getCustomListRequestURL('a153b4e6-1fcc-4f45-a990-f37f989c0d74', demographics),
                     method: 'GET',
                 }),
                 section: createHomeSection({
