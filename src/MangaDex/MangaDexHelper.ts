@@ -289,16 +289,10 @@ interface Demographic {
 class MDDemographicsClass {
     Demographics: Demographic[] = [
         {
-            name: 'Unknown',
-            enum: 'none',
-            default: true
-        },
-        {
             name: 'Safe',
             enum: 'safe',
             default: true
-        }
-        ,
+        },
         {
             name: 'Suggestive',
             enum: 'suggestive',
