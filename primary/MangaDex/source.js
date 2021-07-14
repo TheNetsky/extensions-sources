@@ -671,7 +671,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.6',
+    version: '2.0.7',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -1457,11 +1457,6 @@ exports.MDLanguages = new MDLanguagesClass;
 class MDDemographicsClass {
     constructor() {
         this.Demographics = [
-            {
-                name: 'Unknown',
-                enum: 'none',
-                default: true
-            },
             {
                 name: 'Safe',
                 enum: 'safe',
