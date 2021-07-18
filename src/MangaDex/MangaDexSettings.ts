@@ -6,7 +6,7 @@ import {
 } from 'paperback-extensions-common'
 import {
     MDLanguages,
-    MDDemographics,
+    MDRatings,
     MDImageQuality
 } from './MangaDexHelper'
 
@@ -14,8 +14,8 @@ export const getLanguages = async (stateManager: SourceStateManager): Promise<st
     return (await stateManager.retrieve('languages') as string[]) ?? MDLanguages.getDefault()
 }
 
-export const getDemographics = async (stateManager: SourceStateManager): Promise<string[]> => {
-    return (await stateManager.retrieve('demographics') as string[]) ?? MDDemographics.getDefault()
+export const getRatings = async (stateManager: SourceStateManager): Promise<string[]> => {
+    return (await stateManager.retrieve('ratings') as string[]) ?? MDRatings.getDefault()
 }
 
 export const getDataSaver = async (stateManager: SourceStateManager): Promise<boolean> => {
@@ -35,7 +35,7 @@ export const contentSettings = (stateManager: SourceStateManager): NavigationBut
             onSubmit: (values: any) => {
                 return Promise.all([
                     stateManager.store('languages', values.languages),
-                    stateManager.store('demographics', values.demographics),
+                    stateManager.store('ratings', values.ratings),
                     stateManager.store('data_saver', values.data_saver),
                     stateManager.store('skip_same_chapter', values.skip_same_chapter)
                 ]).then()
@@ -51,7 +51,7 @@ export const contentSettings = (stateManager: SourceStateManager): NavigationBut
                         rows: () => {
                             return Promise.all([
                                 getLanguages(stateManager),
-                                getDemographics(stateManager),
+                                getRatings(stateManager),
                                 getDataSaver(stateManager),
                                 getSkipSameChapter(stateManager)
                             ]).then(async values => {
@@ -66,10 +66,10 @@ export const contentSettings = (stateManager: SourceStateManager): NavigationBut
                                         minimumOptionCount: 1,
                                     }),
                                     createSelect({
-                                        id: 'demographics',
-                                        label: 'Publication Demographic',
-                                        options: MDDemographics.getEnumList(),
-                                        displayLabel: option => MDDemographics.getName(option),
+                                        id: 'ratings',
+                                        label: 'Content Rating',
+                                        options: MDRatings.getEnumList(),
+                                        displayLabel: option => MDRatings.getName(option),
                                         value: values[1],
                                         allowsMultiselect: true,
                                         minimumOptionCount: 1
@@ -178,7 +178,7 @@ export const resetSettings = (stateManager: SourceStateManager): Button => {
         onTap: () => {
             return Promise.all([
                 stateManager.store('languages', null),
-                stateManager.store('demographics', null),
+                stateManager.store('ratings', null),
                 stateManager.store('data_saver', null),
                 stateManager.store('skip_same_chapter', null),
                 stateManager.store('homepage_thumbnail', null),

@@ -280,14 +280,14 @@ class MDLanguagesClass {
 
 export const MDLanguages = new MDLanguagesClass
 
-interface Demographic {
+interface Rating {
     name: string,
     enum: string,
     default?: true
 }
 
-class MDDemographicsClass {
-    Demographics: Demographic[] = [
+class MDContentRatingClass {
+    Ratings: Rating[] = [
         {
             name: 'Safe',
             enum: 'safe',
@@ -308,19 +308,19 @@ class MDDemographicsClass {
     ]
 
     getEnumList(): string[] {
-        return this.Demographics.map(Demographic => Demographic.enum)
+        return this.Ratings.map(Rating => Rating.enum)
     }
 
-    getName(demographicEnum: string): string {
-        return this.Demographics.filter(Demographic => Demographic.enum == demographicEnum)[0]?.name ?? ''
+    getName(ratingEum: string): string {
+        return this.Ratings.filter(Rating => Rating.enum == ratingEum)[0]?.name ?? ''
     }
 
     getDefault(): string[] {
-        return this.Demographics.filter(Demographic => Demographic.default).map(Demographic => Demographic.enum)
+        return this.Ratings.filter(Rating => Rating.default).map(Rating => Rating.enum)
     }
 }
 
-export const MDDemographics = new MDDemographicsClass
+export const MDRatings = new MDContentRatingClass
 
 export class URLBuilder {
     parameters: Record<string, any | any[]> = {}
