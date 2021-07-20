@@ -674,7 +674,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.8',
+    version: '2.0.9',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -1169,6 +1169,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     }));
                 }
             }
+            mangaUpdatesFoundCallback(createMangaUpdates({ ids: [] }));
         });
     }
     decodeHTMLEntity(str) {
