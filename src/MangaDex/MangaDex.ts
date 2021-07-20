@@ -58,7 +58,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.8',
+    version: '2.0.9',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -599,6 +599,7 @@ export class MangaDex extends Source {
                 }))
             }
         }
+        mangaUpdatesFoundCallback(createMangaUpdates({ids: []}))
     }
 
     decodeHTMLEntity(str: string): string {
