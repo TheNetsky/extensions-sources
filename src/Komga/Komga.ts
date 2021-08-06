@@ -15,14 +15,17 @@ import {
   ContentRating,
   RequestInterceptor,
   Request,
-  Response
+  Response,
+  Section,
+  SourceStateManager
 } from "paperback-extensions-common"
 
 import {reverseLangCode} from "./Languages"
 
 import {
   serverSettingsMenu,
-  testServerSettingsMenu
+  testServerSettingsMenu,
+  resetSettingsButton
 } from './KomgaSettings'
 
 export const KomgaInfo: SourceInfo = {
@@ -32,7 +35,6 @@ export const KomgaInfo: SourceInfo = {
   author: "Lemon",
   authorWebsite: "https://github.com/FramboisePi",
   description: "Extension that pulls manga from a Komga server",
-  //language: ,
   contentRating: ContentRating.EVERYONE,
   websiteBaseURL: "https://komga.org",
   sourceTags: [
@@ -62,9 +64,32 @@ export const parseMangaStatus = (komgaStatus: string) => {
   return MangaStatus.ONGOING
 }
 
+export const capitalize = (tag: string) => {
+  return tag.replace(/^\w/, (c) => c.toUpperCase());
+}
+
+export const getServerUnavailableMangaTiles = () => {
+  // This tile is used as a placeholder when the server is unavailable
+  return [createMangaTile({
+    id: "placeholder-id",
+    title: createIconText({ text: "Server" }),
+    image: "",
+    subtitleText: createIconText({ text: "unavailable"}),
+  })]
+}
 
 export class KomgaRequestInterceptor implements RequestInterceptor {
-  stateManager = createSourceStateManager({})
+  /*
+    Requests made to Komga must use a Basic Authentication. 
+    This interceptor adds an authorization header to the requests.
+
+    NOTE: The authorization header can be overridden by the request 
+   */
+
+  stateManager: SourceStateManager
+  constructor(stateManager: SourceStateManager) {
+    this.stateManager = stateManager
+  }
 
   async getAuthorizationString(): Promise<string>{    
     const authorizationString = await this.stateManager.retrieve("authorization") as string
@@ -102,13 +127,6 @@ export class KomgaRequestInterceptor implements RequestInterceptor {
 
 export class Komga extends Source {
 
-  createAuthorizationString(username: String, password: String) {
-    return "Basic " + Buffer.from(username + ":" + password, 'binary').toString('base64')
-  }
-  createKomgaAPI(serverAddress: String){
-    return serverAddress + (serverAddress.slice(-1) === "/" ? "api/v1" : "/api/v1")
-  }
-
   async getAuthorizationString(): Promise<string>{
     const authorizationString = await this.stateManager.retrieve("authorization") as string
 
@@ -131,7 +149,7 @@ export class Komga extends Source {
 
   requestManager = createRequestManager({
     requestsPerSecond: 4,
-    interceptor: new KomgaRequestInterceptor()
+    interceptor: new KomgaRequestInterceptor(this.stateManager)
   })
 
   override async getSourceMenu(): Promise<Section> {
@@ -141,8 +159,59 @@ export class Komga extends Source {
         rows: () => Promise.resolve([
           serverSettingsMenu(this.stateManager),
           testServerSettingsMenu(this.stateManager, this.requestManager),
+          resetSettingsButton(this.stateManager)
         ])
     }))
+  }
+
+  
+  override async getTags(): Promise<TagSection[]> {
+    // This function is called on the homepage and should not throw if the server is unavailable
+
+    // We define two types of tags: 
+    // - `genre` 
+    // - `tag`
+    // To be able to make the difference between theses types, we append `genre-` or `tag-` at the beginning of the tag id
+
+    // TODO: we could add: collections
+
+    let genresResponse: Response
+    let tagsResponse: Response
+
+    // We try to make the requests. If this fail, we return a placeholder tags list to inform the user and prevent the function from throwing an error
+    try {
+      const komgaAPI = await this.getKomgaAPI()
+
+      const genresRequest = createRequestObject({
+        url: `${komgaAPI}/genres/`,
+        method: "GET",
+      })
+      genresResponse = await this.requestManager.schedule(genresRequest, 1)
+
+      const tagsRequest = createRequestObject({
+        url: `${komgaAPI}/tags/series/`,
+        method: "GET",
+      })
+      tagsResponse = await this.requestManager.schedule(tagsRequest, 1)
+
+    } catch (error) {
+      console.log(`getTags failed with error: ${error}`)
+      return [createTagSection({ id: '-1', label: 'Server unavailable', tags: [] })]
+    }
+
+    // The following part of the function should throw if there is an error and thus is not in the try/catch block
+    
+    const genresResult = (typeof genresResponse.data) === "string" ? JSON.parse(genresResponse.data) : genresResponse.data
+    const tagsResult = (typeof tagsResponse.data) === "string" ? JSON.parse(tagsResponse.data) : tagsResponse.data
+
+    const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: [createTag({ id: "ide", label: "tes" })] })]
+                                      // createTagSection({ id: '1', label: 'tags', tags: [] })]
+
+    // For each tag, we append a type identifier to its id and capitalize its label
+    //tagSections[0]!.tags = genresResult.map((elem: string) => createTag({ id: "genre-" + elem, label: capitalize(elem) }))
+    //tagSections[1]!.tags = tagsResult.map((elem: string) => createTag({ id: "tag-" + elem, label: capitalize(elem) }))
+
+    return tagSections
   }
 
   async getMangaDetails(mangaId: string): Promise<Manga> {
@@ -157,14 +226,16 @@ export class Komga extends Source {
     })
 
     const response = await this.requestManager.schedule(request, 1)
-    const result = typeof response.data === "string" ? JSON.parse(response.data) : response.data
+    const result = (typeof response.data) === "string" ? JSON.parse(response.data) : response.data
+
     const metadata = result.metadata
     const booksMetadata = result.booksMetadata
 
     const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: [] }),
                                        createTagSection({ id: '1', label: 'tags', tags: [] })]
-    tagSections[0].tags = metadata.genres.map((elem: string) => createTag({ id: elem, label: elem }))
-    tagSections[1].tags = metadata.tags.map((elem: string) => createTag({ id: elem, label: elem }))
+    // For each tag, we append a type identifier to its id and capitalize its label
+    tagSections[0]!.tags = metadata.genres.map((elem: string) => createTag({ id: "genre-" + elem, label: capitalize(elem) }))
+    tagSections[1]!.tags = metadata.tags.map((elem: string) => createTag({ id: "tag-" + elem, label: capitalize(elem) }))
 
     let authors: string[] = []
     let artists: string[] = []
@@ -183,10 +254,9 @@ export class Komga extends Source {
       id: mangaId,
       titles: [metadata.title],
       image: `${komgaAPI}/series/${mangaId}/thumbnail`,
-      rating: 5,
       status: parseMangaStatus(metadata.status),
       langFlag: metadata.language,
-      //langName:,
+      // Unused: langName
       
       artist: artists.join(", "),
       author: authors.join(", "),
@@ -205,27 +275,29 @@ export class Komga extends Source {
 
     const komgaAPI = await this.getKomgaAPI()
 
-    const request = createRequestObject({
+    const booksRequest = createRequestObject({
       url: `${komgaAPI}/series/${mangaId}/books`,
       param: "?unpaged=true&media_status=READY",
       method: "GET",
     })
 
-    const response = await this.requestManager.schedule(request, 1)
-    const result = typeof response.data === "string" ? JSON.parse(response.data) : response.data
+    const booksResponse = await this.requestManager.schedule(booksRequest, 1)
+    const booksResult = (typeof booksResponse.data) === "string" ? JSON.parse(booksResponse.data) : booksResponse.data
     
     let chapters: Chapter[] = []
 
     // Chapters language is only available on the serie page
-    const requestSerie = createRequestObject({
+    const serieRequest = createRequestObject({
       url: `${komgaAPI}/series/${mangaId}/`,
       method: "GET",
     })
-    const responseSerie = await this.requestManager.schedule(requestSerie, 1)
-    const resultSerie = typeof responseSerie.data === "string" ? JSON.parse(responseSerie.data) : responseSerie.data
-    const languageCode = reverseLangCode[resultSerie.metadata.language] ?? reverseLangCode['_unknown']
 
-    for (let book of result.content) {
+    const serieResponse = await this.requestManager.schedule(serieRequest, 1)
+    const serieResult = (typeof serieResponse.data) === "string" ? JSON.parse(serieResponse.data) : serieResponse.data
+
+    const languageCode = reverseLangCode[serieResult.metadata.language] ?? reverseLangCode['_unknown']!
+
+    for (let book of booksResult.content) {
       chapters.push(
         createChapter({
           id: book.id,
@@ -251,8 +323,7 @@ export class Komga extends Source {
     })
 
     const data = await this.requestManager.schedule(request, 1)
-    const result = typeof data.data === "string" ? JSON.parse(data.data) : data.data
-    
+    const result = (typeof data.data === "string") ? JSON.parse(data.data) : data.data
     
     let pages: string[] = []
     for (let page of result) {
@@ -287,20 +358,37 @@ export class Komga extends Source {
 
 
   async searchRequest(searchQuery: SearchRequest, metadata: any): Promise<PagedResults> {
+    // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
 
-    const komgaAPI = await this.getKomgaAPI()
-    let page : number = metadata?.page ?? 0
+    // We won't use `await this.getKomgaAPI()` as we do not want to throw an error
+    const komgaAPI = await this.stateManager.retrieve("komgaAPI")
+
+    if (komgaAPI === null) {
+      console.log("searchRequest failed because server settings are unset")
+      return createPagedResults({
+        results: getServerUnavailableMangaTiles(),
+      })
+    }
+    
+    let page: number = metadata?.page ?? 0
 
     let paramsList = [`page=${page}`, `size=${PAGE_SIZE}`]
 
-    if (searchQuery.title !== undefined) {
+    if (searchQuery.title !== undefined && searchQuery.title !== "") {
       paramsList.push("search=" + encodeURIComponent(searchQuery.title))
     }
-    /*
-    if (query.status !== undefined) {
-      paramsList.push("status=" + KOMGA_STATUS_LIST[query.status])
+    if (searchQuery.includedTags !== undefined) {
+      searchQuery.includedTags.forEach(tag => {
+
+        // There are two types of tags: `tag` and `genre`
+        if (tag.id.substr(0, 4) == "tag-") {
+          paramsList.push("tag=" + encodeURIComponent(tag.id.substring(4)))
+        }
+        if (tag.id.substr(0, 6) == "genre-") {
+          paramsList.push("genre=" + encodeURIComponent(tag.id.substring(6)))
+        }
+      })
     }
-    */
 
     let paramsString = ""
     if (paramsList.length > 0) {
@@ -313,9 +401,18 @@ export class Komga extends Source {
       param: paramsString,
     })
 
-    const data = await this.requestManager.schedule(request, 1)
+    // We don't want to throw if the server is unavailable
+    let data: Response
+    try {
+      data = await this.requestManager.schedule(request, 1)
+    } catch (error) {
+      console.log(`searchRequest failed with error: ${error}`)
+      return createPagedResults({
+        results: getServerUnavailableMangaTiles()
+      })
+    }
 
-    const result = typeof data.data === "string" ? JSON.parse(data.data) : data.data
+    const result = (typeof data.data) === "string" ? JSON.parse(data.data) : data.data
 
     let tiles = []
     for (let serie of result.content) {
@@ -336,18 +433,20 @@ export class Komga extends Source {
     })
   }
 
-  async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+  override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+    // This function is called on the homepage and should not throw if the server is unavailable
     
     // We won't use `await this.getKomgaAPI()` as we do not want to throw an error on
     // the homepage when server settings are not set
     const komgaAPI = await this.stateManager.retrieve("komgaAPI")
 
     if (komgaAPI === null) {
-      // Server settings unset in source settings
+      console.log("searchRequest failed because server settings are unset")
       const section = createHomeSection({
         id: 'unset',
-        title: 'Server settings unset in source settings',
+        title: 'Go to source settings to set your Komga server credentials.',
         view_more: false,
+        items: getServerUnavailableMangaTiles()
       })
       sectionCallback(section)
       return
@@ -395,15 +494,15 @@ export class Komga extends Source {
             }
             section.items = tiles
             sectionCallback(section)
-          }),
-      )
+          })
+      ) 
     }
 
     // Make sure the function completes
     await Promise.all(promises)
   }
 
-  async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+  override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
 
     const komgaAPI = await this.getKomgaAPI()
     let page: number = metadata?.page ?? 0
@@ -436,7 +535,7 @@ export class Komga extends Source {
     })
   }
 
-  async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+  override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
 
     const komgaAPI = await this.getKomgaAPI()
 
