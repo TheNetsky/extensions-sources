@@ -1,32 +1,49 @@
 import {
-  Source,
-  Manga,
   Chapter,
   ChapterDetails,
+  ContentRating,
   HomeSection,
-  SearchRequest,
+  Manga,
   MangaStatus,
+  MangaTile,
   MangaUpdates,
   PagedResults,
-  SourceInfo,
-  TagSection,
-  MangaTile,
-  TagType,
-  ContentRating,
-  RequestInterceptor,
   Request,
+  RequestInterceptor,
   Response,
+  SearchRequest,
   Section,
-  SourceStateManager
+  Source,
+  SourceInfo,
+  SourceStateManager,
+  TagSection,
+  TagType
 } from "paperback-extensions-common"
 
-import {reverseLangCode} from "./Languages"
+import { parseLangCode } from "./Languages"
 
 import {
   serverSettingsMenu,
   testServerSettingsMenu,
   resetSettingsButton
 } from './KomgaSettings'
+
+// This source use Komga REST API
+// https://komga.org/guides/rest.html
+
+// Manga are represented by `series`
+// Chapters are represented by `books`
+
+// The Basic Authentication is handled by the interceptor
+
+// Code and method used by both the source and the tracker are defined in the duplicated `KomgaCommon.ts` file
+
+// Due to the self hosted nature of Komga, this source requires the user to enter its server credentials in the source settings menu
+// Some methods are known to throw errors without specific actions from the user. They try to prevent this behavior when server settings are not set.
+// This include:
+//  - homepage sections
+//  - getTags() which is called on the homepage
+//  - search method which is called even if the user search in an other source
 
 export const KomgaInfo: SourceInfo = {
   version: "1.1.3",
@@ -42,7 +59,7 @@ export const KomgaInfo: SourceInfo = {
         text: "Self hosted",
         type: TagType.RED
     }
-]
+  ]
 }
 
 const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"]
@@ -163,7 +180,6 @@ export class Komga extends Source {
         ])
     }))
   }
-
   
   override async getTags(): Promise<TagSection[]> {
     // This function is called on the homepage and should not throw if the server is unavailable
@@ -204,12 +220,12 @@ export class Komga extends Source {
     const genresResult = (typeof genresResponse.data) === "string" ? JSON.parse(genresResponse.data) : genresResponse.data
     const tagsResult = (typeof tagsResponse.data) === "string" ? JSON.parse(tagsResponse.data) : tagsResponse.data
 
-    const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: [createTag({ id: "ide", label: "tes" })] })]
-                                      // createTagSection({ id: '1', label: 'tags', tags: [] })]
+    const tagSections: TagSection[] = [createTagSection({ id: '0', label: 'genres', tags: [] }),
+                                       createTagSection({ id: '1', label: 'tags', tags: [] })]
 
     // For each tag, we append a type identifier to its id and capitalize its label
-    //tagSections[0]!.tags = genresResult.map((elem: string) => createTag({ id: "genre-" + elem, label: capitalize(elem) }))
-    //tagSections[1]!.tags = tagsResult.map((elem: string) => createTag({ id: "tag-" + elem, label: capitalize(elem) }))
+    tagSections[0]!.tags = genresResult.map((elem: string) => createTag({ id: "genre-" + elem, label: capitalize(elem) }))
+    tagSections[1]!.tags = tagsResult.map((elem: string) => createTag({ id: "tag-" + elem, label: capitalize(elem) }))
 
     return tagSections
   }
@@ -277,7 +293,7 @@ export class Komga extends Source {
 
     const booksRequest = createRequestObject({
       url: `${komgaAPI}/series/${mangaId}/books`,
-      param: "?unpaged=true&media_status=READY",
+      param: "?unpaged=true&media_status=READY&deleted=false",
       method: "GET",
     })
 
@@ -418,7 +434,6 @@ export class Komga extends Source {
         id: serie.id,
         title: createIconText({ text: serie.metadata.title }),
         image: `${komgaAPI}/series/${serie.id}/thumbnail`,
-        subtitleText: createIconText({ text: "id: " + serie.id }),
       }))
     }
 
@@ -472,10 +487,10 @@ export class Komga extends Source {
 
       const request = createRequestObject({
         url: `${komgaAPI}/series/${section.id}`,
-        param: "?page=0&size=20",
+        param: "?page=0&size=20&deleted=false",
         method: "GET",
       })
-
+      
       // Get the section data
       promises.push(
           this.requestManager.schedule(request, 1).then(data => {
@@ -487,7 +502,6 @@ export class Komga extends Source {
                 id: serie.id,
                 title: createIconText({ text: serie.metadata.title }),
                 image: `${komgaAPI}/series/${serie.id}/thumbnail`,
-                subtitleText: createIconText({ text: "id: " + serie.id }),
               }))
             }
             section.items = tiles
@@ -507,7 +521,7 @@ export class Komga extends Source {
 
     const request = createRequestObject({
       url: `${komgaAPI}/series/${homepageSectionId}`,
-      param: `?page=${page}&size=${PAGE_SIZE}`,
+      param: `?page=${page}&size=${PAGE_SIZE}&deleted=false`,
       method: "GET",
     })
 
@@ -520,7 +534,6 @@ export class Komga extends Source {
         id: serie.id,
         title: createIconText({ text: serie.metadata.title }),
         image: `${komgaAPI}/series/${serie.id}/thumbnail`,
-        subtitleText: createIconText({ text: "id: " + serie.id }),
       }))
     }
 
@@ -547,7 +560,7 @@ export class Komga extends Source {
 
       const request = createRequestObject({
         url: `${komgaAPI}/series/updated/`,
-        param: `?page=${page}&size=${PAGE_SIZE}`,
+        param: `?page=${page}&size=${PAGE_SIZE}&deleted=false`,
         method: "GET",
       })
 
@@ -582,11 +595,5 @@ export class Komga extends Source {
       }
     }
   }
-
-  /*
-  getMangaShareUrl(mangaId: string) {
-    return `${KOMGA_API_DOMAIN}/series/${mangaId}`
-  }
-  */
 
 }
