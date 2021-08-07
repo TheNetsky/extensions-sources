@@ -291,11 +291,9 @@ export class Komga extends Source {
       url: `${komgaAPI}/series/${mangaId}/`,
       method: "GET",
     })
-
     const serieResponse = await this.requestManager.schedule(serieRequest, 1)
     const serieResult = (typeof serieResponse.data) === "string" ? JSON.parse(serieResponse.data) : serieResponse.data
-
-    const languageCode = reverseLangCode[serieResult.metadata.language] ?? reverseLangCode['_unknown']!
+    const languageCode = parseLangCode(serieResult.metadata.language)
 
     for (let book of booksResult.content) {
       chapters.push(

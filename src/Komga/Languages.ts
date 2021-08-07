@@ -1,44 +1,56 @@
-import {LanguageCode} from 'paperback-extensions-common'
+import { LanguageCode } from 'paperback-extensions-common'
 
-export const reverseLangCode: {[x: string]: LanguageCode} = {
+const reverseLangCode: {[x: string]: LanguageCode} = {
     '_unknown': LanguageCode.UNKNOWN,
-    'bd': LanguageCode.BENGALI,
+    'bn': LanguageCode.BENGALI,
     'bg': LanguageCode.BULGARIAN,
-    'br': LanguageCode.BRAZILIAN,
-    'cn': LanguageCode.CHINEESE,
-    'cz': LanguageCode.CZECH,
+    //'br': LanguageCode.BRAZILIAN,         // use pt: Portuguese
+    'zs': LanguageCode.CHINEESE,            // CHINESE
+    'cs': LanguageCode.CZECH,
     'de': LanguageCode.GERMAN,
-    'dk': LanguageCode.DANISH,
-    'gb': LanguageCode.ENGLISH,
-    'en': LanguageCode.ENGLISH,             // en is accepted by Komga
+    'da': LanguageCode.DANISH,
+    'en': LanguageCode.ENGLISH,
     'es': LanguageCode.SPANISH,
     'fi': LanguageCode.FINNISH,
     'fr': LanguageCode.FRENCH,
-    'gr': LanguageCode.GREEK,
-    'hk': LanguageCode.CHINEESE_HONGKONG,
+    'el': LanguageCode.GREEK,
+    //'hk': LanguageCode.CHINEESE_HONGKONG,
     'hu': LanguageCode.HUNGARIAN,
     'id': LanguageCode.INDONESIAN,
-    'il': LanguageCode.ISRELI,
-    'in': LanguageCode.INDIAN,
-    'ir': LanguageCode.IRAN,
+    'he': LanguageCode.ISRELI,          // HEBREW
+    'hi': LanguageCode.INDIAN,          // HINDI
+    'fa': LanguageCode.IRAN,            // PERSIAN
     'it': LanguageCode.ITALIAN,
-    'jp': LanguageCode.JAPANESE,
-    'kr': LanguageCode.KOREAN,
+    'ja': LanguageCode.JAPANESE,
+    'ko': LanguageCode.KOREAN,
     'lt': LanguageCode.LITHUANIAN,
     'mn': LanguageCode.MONGOLIAN,
-    'mx': LanguageCode.MEXIAN,
-    'my': LanguageCode.MALAY,
+    //'mx': LanguageCode.MEXIAN,        // use es: Spanish
+    //'my': LanguageCode.MALAY,
     'nl': LanguageCode.DUTCH,
     'no': LanguageCode.NORWEGIAN,
-    'ph': LanguageCode.PHILIPPINE,
+    'fil': LanguageCode.PHILIPPINE,     // FILIPINO
     'pl': LanguageCode.POLISH,
     'pt': LanguageCode.PORTUGUESE,
     'ro': LanguageCode.ROMANIAN,
     'ru': LanguageCode.RUSSIAN,
     'sa': LanguageCode.SANSKRIT,
-    'si': LanguageCode.SAMI,
+    //'si': LanguageCode.SAMI,
     'th': LanguageCode.THAI,
     'tr': LanguageCode.TURKISH,
-    'ua': LanguageCode.UKRAINIAN,
-    'vn': LanguageCode.VIETNAMESE
+    'uk': LanguageCode.UKRAINIAN,
+    'vi': LanguageCode.VIETNAMESE
 }
+
+export const parseLangCode = (code: string) => {
+    // The code can have the format 'en' or 'en-gb'.
+    // We only use the first 2 or 3 letters.
+
+    // There is 1 three letters code
+    if (code.substr(0,3) === 'fil') {
+        return LanguageCode.PHILIPPINE
+    }
+
+    // Other are two letters codes
+    return reverseLangCode[code.substr(0,2)] ?? LanguageCode.UNKNOWN
+  }
