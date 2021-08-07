@@ -28,6 +28,8 @@ import {
   resetSettingsButton
 } from './KomgaSettings'
 
+import { KomgaCommon } from './KomgaCommon'
+
 // This source use Komga REST API
 // https://komga.org/guides/rest.html
 
@@ -83,16 +85,6 @@ export const parseMangaStatus = (komgaStatus: string) => {
 
 export const capitalize = (tag: string) => {
   return tag.replace(/^\w/, (c) => c.toUpperCase());
-}
-
-export const getServerUnavailableMangaTiles = () => {
-  // This tile is used as a placeholder when the server is unavailable
-  return [createMangaTile({
-    id: "placeholder-id",
-    title: createIconText({ text: "Server" }),
-    image: "",
-    subtitleText: createIconText({ text: "unavailable"}),
-  })]
 }
 
 export class KomgaRequestInterceptor implements RequestInterceptor {
@@ -373,77 +365,8 @@ export class Komga extends Source {
 
   async searchRequest(searchQuery: SearchRequest, metadata: any): Promise<PagedResults> {
     // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
-
-    // We won't use `await this.getKomgaAPI()` as we do not want to throw an error
-    const komgaAPI = await this.stateManager.retrieve("komgaAPI")
-
-    if (komgaAPI === null) {
-      console.log("searchRequest failed because server settings are unset")
-      return createPagedResults({
-        results: getServerUnavailableMangaTiles(),
-      })
-    }
     
-    let page: number = metadata?.page ?? 0
-
-    let paramsList = [`page=${page}`, `size=${PAGE_SIZE}`]
-
-    if (searchQuery.title !== undefined && searchQuery.title !== "") {
-      paramsList.push("search=" + encodeURIComponent(searchQuery.title))
-    }
-    if (searchQuery.includedTags !== undefined) {
-      searchQuery.includedTags.forEach(tag => {
-
-        // There are two types of tags: `tag` and `genre`
-        if (tag.id.substr(0, 4) == "tag-") {
-          paramsList.push("tag=" + encodeURIComponent(tag.id.substring(4)))
-        }
-        if (tag.id.substr(0, 6) == "genre-") {
-          paramsList.push("genre=" + encodeURIComponent(tag.id.substring(6)))
-        }
-      })
-    }
-
-    let paramsString = ""
-    if (paramsList.length > 0) {
-      paramsString = "?" + paramsList.join("&");
-    }
-
-    const request = createRequestObject({
-      url: `${komgaAPI}/series`,
-      method: "GET",
-      param: paramsString,
-    })
-
-    // We don't want to throw if the server is unavailable
-    let data: Response
-    try {
-      data = await this.requestManager.schedule(request, 1)
-    } catch (error) {
-      console.log(`searchRequest failed with error: ${error}`)
-      return createPagedResults({
-        results: getServerUnavailableMangaTiles()
-      })
-    }
-
-    const result = (typeof data.data) === "string" ? JSON.parse(data.data) : data.data
-
-    let tiles = []
-    for (let serie of result.content) {
-      tiles.push(createMangaTile({
-        id: serie.id,
-        title: createIconText({ text: serie.metadata.title }),
-        image: `${komgaAPI}/series/${serie.id}/thumbnail`,
-      }))
-    }
-
-    // If no series were returned we are on the last page
-    metadata = tiles.length === 0 ? undefined : {page: page + 1}
-
-    return createPagedResults({
-      results: tiles,
-      metadata
-    })
+    return KomgaCommon.searchRequest(searchQuery, metadata, this.requestManager, this.stateManager, PAGE_SIZE)
   }
 
   override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
@@ -459,7 +382,7 @@ export class Komga extends Source {
         id: 'unset',
         title: 'Go to source settings to set your Komga server credentials.',
         view_more: false,
-        items: getServerUnavailableMangaTiles()
+        items: KomgaCommon.getServerUnavailableMangaTiles()
       })
       sectionCallback(section)
       return
