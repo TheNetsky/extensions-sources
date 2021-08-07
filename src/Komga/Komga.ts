@@ -48,7 +48,7 @@ import { KomgaCommon } from './KomgaCommon'
 //  - search method which is called even if the user search in an other source
 
 export const KomgaInfo: SourceInfo = {
-    version: "1.1.3",
+    version: "1.2.0",
     name: "Komga",
     icon: "icon.png",
     author: "Lemon",
