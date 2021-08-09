@@ -674,7 +674,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.10',
+    version: '2.0.11',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -800,6 +800,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             if (!mangaId.includes('-')) {
                 // Legacy Id
+                console.log('OLD ID: PLEASE MIGRATE');
                 throw new Error('OLD ID: PLEASE MIGRATE');
             }
             const request = createRequestObject({
@@ -861,6 +862,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             if (!mangaId.includes('-')) {
                 // Legacy Id
+                console.log('OLD ID: PLEASE MIGRATE');
                 throw new Error('OLD ID: PLEASE MIGRATE');
             }
             const languages = yield MangaDexSettings_1.getLanguages(this.stateManager);
@@ -927,6 +929,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             if (!chapterId.includes('-')) {
                 // Numeric ID
+                console.log('OLD ID: PLEASE MIGRATE');
                 throw new Error('OLD ID: PLEASE REFRESH AND CLEAR ORPHANED CHAPTERS');
             }
             const serverUrl = yield this.getMDHNodeURL(chapterId);
