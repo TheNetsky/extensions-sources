@@ -58,7 +58,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.10',
+    version: '2.0.11',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -191,6 +191,7 @@ export class MangaDex extends Source {
     async getMangaDetails(mangaId: string): Promise<Manga> {
         if (!mangaId.includes('-')) {
             // Legacy Id
+            console.log('OLD ID: PLEASE MIGRATE')
             throw new Error('OLD ID: PLEASE MIGRATE')
         }
 
@@ -257,6 +258,7 @@ export class MangaDex extends Source {
     async getChapters(mangaId: string): Promise<Chapter[]> {
         if (!mangaId.includes('-')) {
             // Legacy Id
+            console.log('OLD ID: PLEASE MIGRATE')
             throw new Error('OLD ID: PLEASE MIGRATE')
         }
 
@@ -330,6 +332,7 @@ export class MangaDex extends Source {
     async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
         if (!chapterId.includes('-')) {
             // Numeric ID
+            console.log('OLD ID: PLEASE MIGRATE')
             throw new Error('OLD ID: PLEASE REFRESH AND CLEAR ORPHANED CHAPTERS')
         }
 
