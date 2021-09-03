@@ -58,7 +58,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.13',
+    version: '2.0.14',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -291,7 +291,7 @@ export class MangaDex extends Source {
                     .addQueryParameter('includes', ['scanlation_group'])
                     .addQueryParameter('translatedLanguage', languages)
                     .addQueryParameter('order', {'volume': 'desc', 'chapter': 'desc', 'publishAt': 'desc'})
-                    .addQueryParameter('contentRatings', ratings)
+                    .addQueryParameter('contentRating', ratings)
                     .buildUrl(),
                 method: 'GET',
             })
