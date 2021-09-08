@@ -322,6 +322,46 @@ class MDContentRatingClass {
 
 export const MDRatings = new MDContentRatingClass
 
+interface HomePageSection {
+    name: string,
+    enum: string,
+    default?: true
+}
+
+class MDHomepageSectionsClass {
+    Sections: HomePageSection[] = [
+        {
+            name: 'Seasonal',
+            enum: 'seasonal',
+            default: true
+        },
+        {
+            name: 'Popular',
+            enum: 'popular',
+            default: true
+        },
+        {
+            name: 'Latest Updates',
+            enum: 'latest_updates',
+            default: true
+        }
+    ]
+
+    getEnumList(): string[] {
+        return this.Sections.map(Sections => Sections.enum)
+    }
+
+    getName(sectionsEnum: string): string {
+        return this.Sections.filter(Sections => Sections.enum == sectionsEnum)[0]?.name ?? ''
+    }
+
+    getDefault(): string[] {
+        return this.Sections.filter(Sections => Sections.default).map(Sections => Sections.enum)
+    }
+}
+
+export const MDHomepageSections = new MDHomepageSectionsClass
+
 export class URLBuilder {
     parameters: Record<string, any | any[]> = {}
     pathComponents: string[] = []

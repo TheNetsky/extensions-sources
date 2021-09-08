@@ -1,5 +1,6 @@
 {
   "name": "extensions-sources",
+  "repositoryName": "Extensions Primary",
   "version": "1.0.0",
   "description": "Community maintained Paperback extension repository",
   "main": "index.js",

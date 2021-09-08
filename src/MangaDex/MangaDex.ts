@@ -36,6 +36,9 @@ import {
     resetSettings,
     getDataSaver,
     getSkipSameChapter,
+    homepageSettings,
+    getEnabledRecommendations,
+    getEnabledHomePageSections
 } from './MangaDexSettings'
 import {
     requestMetadata,
@@ -43,6 +46,10 @@ import {
     URLBuilder,
     MDImageQuality
 } from './MangaDexHelper'
+import {
+    addRecommendedId,
+    getRecommendedIds
+} from './MangaDexSimilarManga'
 import tagJSON from './external/tag.json'
 import {
     parseChapterList,
@@ -53,12 +60,16 @@ const MANGADEX_DOMAIN = 'https://mangadex.org'
 const MANGADEX_API = 'https://api.mangadex.org'
 const COVER_BASE_URL = 'https://uploads.mangadex.org/covers'
 
+// Titles recommendations are shown on the homepage when enabled in source settings.
+// Recommendations are made using https://github.com/Similar-Manga
+const RECOMMENDATION_URL = 'https://framboisepi.github.io/SimilarData'
+
 export const MangaDexInfo: SourceInfo = {
     author: 'nar1n',
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.0.14',
+    version: '2.1.0',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -94,6 +105,7 @@ export class MangaDex extends Source {
             rows: () => Promise.resolve([
                 contentSettings(this.stateManager),
                 thumbnailSettings(this.stateManager),
+                homepageSettings(this.stateManager),
                 resetSettings(this.stateManager),
             ])
         }))
@@ -322,6 +334,7 @@ export class MangaDex extends Source {
                         langCode,
                         group,
                         time,
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                         // @ts-ignore
                         sortingIndex
                     }))
@@ -369,6 +382,9 @@ export class MangaDex extends Source {
                 (x: string) => `${serverUrl}/data/${chapterDetails.hash}/${x}`
             )
         }
+
+        // The chapter is being read, add the mangaId to the recommendation list
+        addRecommendedId(this.stateManager, mangaId)
 
         return createChapterDetails({
             id: chapterId,
@@ -423,6 +439,12 @@ export class MangaDex extends Source {
         const ratings: string[] = await getRatings(this.stateManager)
         const languages: string[] = await getLanguages(this.stateManager)
 
+        const promises: Promise<void>[] = []
+
+        // On the homepage we only show sections enabled in source settings:
+        // enabled_homepage_sections and recommended titles sections
+        const enabled_homepage_sections = await getEnabledHomePageSections(this.stateManager)
+
         const sections = [
             {
                 request: createRequestObject({
@@ -469,30 +491,116 @@ export class MangaDex extends Source {
                 }),
             },
         ]
-        const promises: Promise<void>[] = []
 
         for (const section of sections) {
-            // Let the app load empty sections
-            sectionCallback(section.section)
+            // We only add the section if it is requested by the user in settings
+            if (enabled_homepage_sections.includes(section.section.id)) {
 
-            // Get the section data
-            promises.push(
-                this.requestManager.schedule(section.request, 1).then(async response => {
-                    const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
+                // Let the app load empty sections
+                sectionCallback(section.section)
 
-                    if(json.results === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
+                // Get the section data
+                promises.push(
+                    this.requestManager.schedule(section.request, 1).then(async response => {
+                        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-                    switch(section.section.id) {
-                        case 'latest_updates':
-                            const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
-                            section.section.items = await parseChapterList(json.results, coversMapping, this, getHomepageThumbnail, ratings)
-                            break
-                        default:
-                            section.section.items = await parseMangaList(json.results, this, getHomepageThumbnail)
-                    }
-                    sectionCallback(section.section)
-                }),
-            )
+                        if(json.results === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
+
+                        switch(section.section.id) {
+                            case 'latest_updates':
+                                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
+                                section.section.items = await parseChapterList(json.results, coversMapping, this, getHomepageThumbnail, ratings)
+                                break
+                            default:
+                                section.section.items = await parseMangaList(json.results, this, getHomepageThumbnail)
+                        }
+                        sectionCallback(section.section)
+                    }),
+                )
+            }
+        }
+
+        // If the user want to see recommendations on the homepage, we process them
+        if (getEnabledRecommendations(this.stateManager)) {
+            const recommendedIds = await getRecommendedIds(this.stateManager)
+
+            for (const recommendedId of recommendedIds) {
+                // First we fetch similar titles
+                const similarRequest = createRequestObject({
+                    url: `${RECOMMENDATION_URL}/similar/${recommendedId}.json`,
+                    method: 'GET',
+                })
+                promises.push(
+                    this.requestManager.schedule(similarRequest, 1).then(async similarResponse => {
+
+                        // We should only process if the response is valid
+                        // We won't throw an error but silently pass as an error can occurre with 
+                        // titles unsupported by SimilarManga (new titles for example)
+                        if (similarResponse.status !== 200) {
+                            console.log(`Could not fetch similar titles for id: ${recommendedId}, request failed with status ${similarResponse.status}`)
+                        } else {
+                            const similarJson = (typeof similarResponse.data) === 'string' ? JSON.parse(similarResponse.data) : similarResponse.data
+                            
+                            // We should only process if the result is valid
+                            // We won't throw an error but silently pass as an error can occurre with 
+                            // titles unsupported by SimilarManga (new titles for example)
+                            if (similarJson.id === undefined) {
+                                console.log('Could not fetch similar titles for id: ' + recommendedId + ', json is invalid')
+                            } else {
+                                // We know the title of the recommended manga, we can thus create the homepage section
+                                const section = createHomeSection({
+                                    id: recommendedId,
+                                    // Can titles be html encoded?
+                                    title: 'More like ' + this.decodeHTMLEntity(similarJson.title.en),
+                                    view_more: false,
+                                })
+                                // Let the app load empty sections
+                                sectionCallback(section)
+
+                                // Generate the MangaTiles list, sorted by decreasing similarity
+                                const results = []
+                                
+                                // We first add the title used for the recommendation
+                                let image: string
+                                if (similarJson.coverFileName === 'unknown') {
+                                    image = 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg'
+                                } else {
+                                    image = `${COVER_BASE_URL}/${recommendedId}/${similarJson.coverFileName}${MDImageQuality.getEnding(await getMangaThumbnail(this.stateManager))}`
+                                }
+                                results.push(createMangaTile({
+                                    id: recommendedId,
+                                    title: createIconText({text: this.decodeHTMLEntity(similarJson.title.en)}),
+                                    image
+                                }))
+
+                                // We then add similar titles, ordered by decreasing similarity
+                                for (const manga of similarJson.matches) {
+                                    // We should only add the title if its rating is enabled
+                                    if (ratings.includes(manga.contentRating)) {
+                                        // The similar api contains the coverFileName or 'unknown'
+                                        let image: string
+                                        if (manga.coverFileName === 'unknown') {
+                                            image = 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg'
+                                        } else {
+                                            image = `${COVER_BASE_URL}/${manga.id}/${manga.coverFileName}${MDImageQuality.getEnding(await getMangaThumbnail(this.stateManager))}`
+                                        }
+
+                                        results.push(createMangaTile({
+                                            id: manga.id,
+                                            title: createIconText({text: this.decodeHTMLEntity(manga.title.en)}),
+                                            subtitleText: createIconText({text: `Similarity ${manga.score.toFixed(2)}`}),
+                                            image
+                                        }))
+                                    }
+                                }
+
+                                section.items = results
+                                sectionCallback(section)
+                            }
+                        }
+                    })
+                )
+            }
         }
 
         // Make sure the function completes
