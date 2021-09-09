@@ -2422,33 +2422,33 @@ const KomgaCommon_1 = require("./KomgaCommon");
 //  - getTags() which is called on the homepage
 //  - search method which is called even if the user search in an other source
 exports.KomgaInfo = {
-    version: "1.2.1",
-    name: "Komga",
-    icon: "icon.png",
-    author: "Lemon",
-    authorWebsite: "https://github.com/FramboisePi",
-    description: "Extension that pulls manga from a Komga server",
+    version: '1.2.2',
+    name: 'Komga',
+    icon: 'icon.png',
+    author: 'Lemon',
+    authorWebsite: 'https://github.com/FramboisePi',
+    description: 'Extension that pulls manga from a Komga server',
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
-    websiteBaseURL: "https://komga.org",
+    websiteBaseURL: 'https://komga.org',
     sourceTags: [
         {
-            text: "Self hosted",
+            text: 'Self hosted',
             type: paperback_extensions_common_1.TagType.RED
         }
     ]
 };
-const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
 // Number of items requested for paged requests
 const PAGE_SIZE = 40;
 const parseMangaStatus = (komgaStatus) => {
     switch (komgaStatus) {
-        case "ENDED":
+        case 'ENDED':
             return paperback_extensions_common_1.MangaStatus.COMPLETED;
-        case "ONGOING":
+        case 'ONGOING':
             return paperback_extensions_common_1.MangaStatus.ONGOING;
-        case "ABANDONED":
+        case 'ABANDONED':
             return paperback_extensions_common_1.MangaStatus.ONGOING;
-        case "HIATUS":
+        case 'HIATUS':
             return paperback_extensions_common_1.MangaStatus.ONGOING;
     }
     return paperback_extensions_common_1.MangaStatus.ONGOING;
@@ -2464,9 +2464,9 @@ class KomgaRequestInterceptor {
     }
     getAuthorizationString() {
         return __awaiter(this, void 0, void 0, function* () {
-            const authorizationString = yield this.stateManager.retrieve("authorization");
+            const authorizationString = yield this.stateManager.retrieve('authorization');
             if (authorizationString === null) {
-                throw new Error("Unset credentials in source settings");
+                throw new Error('Unset credentials in source settings');
             }
             return authorizationString;
         });
@@ -2506,18 +2506,18 @@ class Komga extends paperback_extensions_common_1.Source {
     }
     getAuthorizationString() {
         return __awaiter(this, void 0, void 0, function* () {
-            const authorizationString = yield this.stateManager.retrieve("authorization");
+            const authorizationString = yield this.stateManager.retrieve('authorization');
             if (authorizationString === null) {
-                throw new Error("Unset credentials in source settings");
+                throw new Error('Unset credentials in source settings');
             }
             return authorizationString;
         });
     }
     getKomgaAPI() {
         return __awaiter(this, void 0, void 0, function* () {
-            const komgaAPI = yield this.stateManager.retrieve("komgaAPI");
+            const komgaAPI = yield this.stateManager.retrieve('komgaAPI');
             if (komgaAPI === null) {
-                throw new Error("Unset server URL in source settings");
+                throw new Error('Unset server URL in source settings');
             }
             return komgaAPI;
         });
@@ -2550,12 +2550,12 @@ class Komga extends paperback_extensions_common_1.Source {
                 const komgaAPI = yield this.getKomgaAPI();
                 const genresRequest = createRequestObject({
                     url: `${komgaAPI}/genres/`,
-                    method: "GET",
+                    method: 'GET',
                 });
                 genresResponse = yield this.requestManager.schedule(genresRequest, 1);
                 const tagsRequest = createRequestObject({
                     url: `${komgaAPI}/tags/series/`,
-                    method: "GET",
+                    method: 'GET',
                 });
                 tagsResponse = yield this.requestManager.schedule(tagsRequest, 1);
             }
@@ -2564,15 +2564,15 @@ class Komga extends paperback_extensions_common_1.Source {
                 return [createTagSection({ id: '-1', label: 'Server unavailable', tags: [] })];
             }
             // The following part of the function should throw if there is an error and thus is not in the try/catch block
-            const genresResult = (typeof genresResponse.data) === "string" ? JSON.parse(genresResponse.data) : genresResponse.data;
-            const tagsResult = (typeof tagsResponse.data) === "string" ? JSON.parse(tagsResponse.data) : tagsResponse.data;
+            const genresResult = (typeof genresResponse.data) === 'string' ? JSON.parse(genresResponse.data) : genresResponse.data;
+            const tagsResult = (typeof tagsResponse.data) === 'string' ? JSON.parse(tagsResponse.data) : tagsResponse.data;
             const tagSections = [
                 createTagSection({ id: '0', label: 'genres', tags: [] }),
                 createTagSection({ id: '1', label: 'tags', tags: [] })
             ];
             // For each tag, we append a type identifier to its id and capitalize its label
-            tagSections[0].tags = genresResult.map((elem) => createTag({ id: "genre-" + elem, label: exports.capitalize(elem) }));
-            tagSections[1].tags = tagsResult.map((elem) => createTag({ id: "tag-" + elem, label: exports.capitalize(elem) }));
+            tagSections[0].tags = genresResult.map((elem) => createTag({ id: 'genre-' + elem, label: exports.capitalize(elem) }));
+            tagSections[1].tags = tagsResult.map((elem) => createTag({ id: 'tag-' + elem, label: exports.capitalize(elem) }));
             return tagSections;
         });
     }
@@ -2584,10 +2584,10 @@ class Komga extends paperback_extensions_common_1.Source {
             const komgaAPI = yield this.getKomgaAPI();
             const request = createRequestObject({
                 url: `${komgaAPI}/series/${mangaId}/`,
-                method: "GET",
+                method: 'GET',
             });
             const response = yield this.requestManager.schedule(request, 1);
-            const result = (typeof response.data) === "string" ? JSON.parse(response.data) : response.data;
+            const result = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
             const metadata = result.metadata;
             const booksMetadata = result.booksMetadata;
             const tagSections = [
@@ -2595,16 +2595,16 @@ class Komga extends paperback_extensions_common_1.Source {
                 createTagSection({ id: '1', label: 'tags', tags: [] })
             ];
             // For each tag, we append a type identifier to its id and capitalize its label
-            tagSections[0].tags = metadata.genres.map((elem) => createTag({ id: "genre-" + elem, label: exports.capitalize(elem) }));
-            tagSections[1].tags = metadata.tags.map((elem) => createTag({ id: "tag-" + elem, label: exports.capitalize(elem) }));
-            let authors = [];
-            let artists = [];
+            tagSections[0].tags = metadata.genres.map((elem) => createTag({ id: 'genre-' + elem, label: exports.capitalize(elem) }));
+            tagSections[1].tags = metadata.tags.map((elem) => createTag({ id: 'tag-' + elem, label: exports.capitalize(elem) }));
+            const authors = [];
+            const artists = [];
             // Additional roles: colorist, inker, letterer, cover, editor
-            for (let entry of booksMetadata.authors) {
-                if (entry.role === "writer") {
+            for (const entry of booksMetadata.authors) {
+                if (entry.role === 'writer') {
                     authors.push(entry.name);
                 }
-                if (entry.role === "penciller") {
+                if (entry.role === 'penciller') {
                     artists.push(entry.name);
                 }
             }
@@ -2615,8 +2615,8 @@ class Komga extends paperback_extensions_common_1.Source {
                 status: exports.parseMangaStatus(metadata.status),
                 langFlag: metadata.language,
                 // Unused: langName
-                artist: artists.join(", "),
-                author: authors.join(", "),
+                artist: artists.join(', '),
+                author: authors.join(', '),
                 desc: (metadata.summary ? metadata.summary : booksMetadata.summary),
                 tags: tagSections,
                 lastUpdate: metadata.lastModified
@@ -2631,21 +2631,21 @@ class Komga extends paperback_extensions_common_1.Source {
             const komgaAPI = yield this.getKomgaAPI();
             const booksRequest = createRequestObject({
                 url: `${komgaAPI}/series/${mangaId}/books`,
-                param: "?unpaged=true&media_status=READY&deleted=false",
-                method: "GET",
+                param: '?unpaged=true&media_status=READY&deleted=false',
+                method: 'GET',
             });
             const booksResponse = yield this.requestManager.schedule(booksRequest, 1);
-            const booksResult = (typeof booksResponse.data) === "string" ? JSON.parse(booksResponse.data) : booksResponse.data;
-            let chapters = [];
+            const booksResult = (typeof booksResponse.data) === 'string' ? JSON.parse(booksResponse.data) : booksResponse.data;
+            const chapters = [];
             // Chapters language is only available on the serie page
             const serieRequest = createRequestObject({
                 url: `${komgaAPI}/series/${mangaId}/`,
-                method: "GET",
+                method: 'GET',
             });
             const serieResponse = yield this.requestManager.schedule(serieRequest, 1);
-            const serieResult = (typeof serieResponse.data) === "string" ? JSON.parse(serieResponse.data) : serieResponse.data;
+            const serieResult = (typeof serieResponse.data) === 'string' ? JSON.parse(serieResponse.data) : serieResponse.data;
             const languageCode = Languages_1.parseLangCode(serieResult.metadata.language);
-            for (let book of booksResult.content) {
+            for (const book of booksResult.content) {
                 chapters.push(createChapter({
                     id: book.id,
                     mangaId: mangaId,
@@ -2663,12 +2663,12 @@ class Komga extends paperback_extensions_common_1.Source {
             const komgaAPI = yield this.getKomgaAPI();
             const request = createRequestObject({
                 url: `${komgaAPI}/books/${chapterId}/pages`,
-                method: "GET",
+                method: 'GET',
             });
             const data = yield this.requestManager.schedule(request, 1);
-            const result = (typeof data.data === "string") ? JSON.parse(data.data) : data.data;
-            let pages = [];
-            for (let page of result) {
+            const result = (typeof data.data === 'string') ? JSON.parse(data.data) : data.data;
+            const pages = [];
+            for (const page of result) {
                 if (SUPPORTED_IMAGE_TYPES.includes(page.mediaType)) {
                     pages.push(`${komgaAPI}/books/${chapterId}/pages/${page.number}`);
                 }
@@ -2679,12 +2679,12 @@ class Komga extends paperback_extensions_common_1.Source {
             // Determine the preferred reading direction which is only available in the serie metadata
             const serieRequest = createRequestObject({
                 url: `${komgaAPI}/series/${mangaId}/`,
-                method: "GET",
+                method: 'GET',
             });
             const serieResponse = yield this.requestManager.schedule(serieRequest, 1);
-            const serieResult = typeof serieResponse.data === "string" ? JSON.parse(serieResponse.data) : serieResponse.data;
+            const serieResult = typeof serieResponse.data === 'string' ? JSON.parse(serieResponse.data) : serieResponse.data;
             let longStrip = false;
-            if (["VERTICAL", "WEBTOON"].includes(serieResult.metadata.readingDirection)) {
+            if (['VERTICAL', 'WEBTOON'].includes(serieResult.metadata.readingDirection)) {
                 longStrip = true;
             }
             return createChapterDetails({
@@ -2695,7 +2695,7 @@ class Komga extends paperback_extensions_common_1.Source {
             });
         });
     }
-    searchRequest(searchQuery, metadata) {
+    getSearchResults(searchQuery, metadata) {
         return __awaiter(this, void 0, void 0, function* () {
             // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
             return KomgaCommon_1.KomgaCommon.searchRequest(searchQuery, metadata, this.requestManager, this.stateManager, PAGE_SIZE);
@@ -2706,9 +2706,9 @@ class Komga extends paperback_extensions_common_1.Source {
             // This function is called on the homepage and should not throw if the server is unavailable
             // We won't use `await this.getKomgaAPI()` as we do not want to throw an error on
             // the homepage when server settings are not set
-            const komgaAPI = yield this.stateManager.retrieve("komgaAPI");
+            const komgaAPI = yield this.stateManager.retrieve('komgaAPI');
             if (komgaAPI === null) {
-                console.log("searchRequest failed because server settings are unset");
+                console.log('searchRequest failed because server settings are unset');
                 const section = createHomeSection({
                     id: 'unset',
                     title: 'Go to source settings to set your Komga server credentials.',
@@ -2737,14 +2737,14 @@ class Komga extends paperback_extensions_common_1.Source {
                 sectionCallback(section);
                 const request = createRequestObject({
                     url: `${komgaAPI}/series/${section.id}`,
-                    param: "?page=0&size=20&deleted=false",
-                    method: "GET",
+                    param: '?page=0&size=20&deleted=false',
+                    method: 'GET',
                 });
                 // Get the section data
                 promises.push(this.requestManager.schedule(request, 1).then(data => {
-                    let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-                    let tiles = [];
-                    for (let serie of result.content) {
+                    const result = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+                    const tiles = [];
+                    for (const serie of result.content) {
                         tiles.push(createMangaTile({
                             id: serie.id,
                             title: createIconText({ text: serie.metadata.title }),
@@ -2763,16 +2763,16 @@ class Komga extends paperback_extensions_common_1.Source {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const komgaAPI = yield this.getKomgaAPI();
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 0;
+            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 0;
             const request = createRequestObject({
                 url: `${komgaAPI}/series/${homepageSectionId}`,
                 param: `?page=${page}&size=${PAGE_SIZE}&deleted=false`,
-                method: "GET",
+                method: 'GET',
             });
             const data = yield this.requestManager.schedule(request, 1);
-            const result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-            let tiles = [];
-            for (let serie of result.content) {
+            const result = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+            const tiles = [];
+            for (const serie of result.content) {
                 tiles.push(createMangaTile({
                     id: serie.id,
                     title: createIconText({ text: serie.metadata.title }),
@@ -2793,18 +2793,18 @@ class Komga extends paperback_extensions_common_1.Source {
             // We make requests of PAGE_SIZE titles to `series/updated/` until we got every titles 
             // or we got a title which `lastModified` metadata is older than `time`
             let page = 0;
-            let foundIds = [];
+            const foundIds = [];
             let loadMore = true;
             while (loadMore) {
                 const request = createRequestObject({
                     url: `${komgaAPI}/series/updated/`,
                     param: `?page=${page}&size=${PAGE_SIZE}&deleted=false`,
-                    method: "GET",
+                    method: 'GET',
                 });
                 const data = yield this.requestManager.schedule(request, 1);
-                let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-                for (let serie of result.content) {
-                    let serieUpdated = new Date(serie.metadata.lastModified);
+                const result = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+                for (const serie of result.content) {
+                    const serieUpdated = new Date(serie.metadata.lastModified);
                     if (serieUpdated >= time) {
                         if (ids.includes(serie)) {
                             foundIds.push(serie);
@@ -2850,36 +2850,36 @@ class KomgaCommon {
         return __awaiter(this, void 0, void 0, function* () {
             // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
             // We won't use `await this.getKomgaAPI()` as we do not want to throw an error
-            const komgaAPI = yield stateManager.retrieve("komgaAPI");
+            const komgaAPI = yield stateManager.retrieve('komgaAPI');
             if (komgaAPI === null) {
-                console.log("searchRequest failed because server settings are unset");
+                console.log('searchRequest failed because server settings are unset');
                 return createPagedResults({
                     results: this.getServerUnavailableMangaTiles(),
                 });
             }
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 0;
-            let paramsList = [`page=${page}`, `size=${page_size}`];
-            if (searchQuery.title !== undefined && searchQuery.title !== "") {
-                paramsList.push("search=" + encodeURIComponent(searchQuery.title));
+            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 0;
+            const paramsList = [`page=${page}`, `size=${page_size}`];
+            if (searchQuery.title !== undefined && searchQuery.title !== '') {
+                paramsList.push('search=' + encodeURIComponent(searchQuery.title));
             }
             if (searchQuery.includedTags !== undefined) {
                 searchQuery.includedTags.forEach(tag => {
                     // There are two types of tags: `tag` and `genre`
-                    if (tag.id.substr(0, 4) == "tag-") {
-                        paramsList.push("tag=" + encodeURIComponent(tag.id.substring(4)));
+                    if (tag.id.substr(0, 4) == 'tag-') {
+                        paramsList.push('tag=' + encodeURIComponent(tag.id.substring(4)));
                     }
-                    if (tag.id.substr(0, 6) == "genre-") {
-                        paramsList.push("genre=" + encodeURIComponent(tag.id.substring(6)));
+                    if (tag.id.substr(0, 6) == 'genre-') {
+                        paramsList.push('genre=' + encodeURIComponent(tag.id.substring(6)));
                     }
                 });
             }
-            let paramsString = "";
+            let paramsString = '';
             if (paramsList.length > 0) {
-                paramsString = "?" + paramsList.join("&");
+                paramsString = '?' + paramsList.join('&');
             }
             const request = createRequestObject({
                 url: `${komgaAPI}/series`,
-                method: "GET",
+                method: 'GET',
                 param: paramsString,
             });
             // We don't want to throw if the server is unavailable
@@ -2893,9 +2893,9 @@ class KomgaCommon {
                     results: this.getServerUnavailableMangaTiles()
                 });
             }
-            const result = (typeof data.data) === "string" ? JSON.parse(data.data) : data.data;
-            let tiles = [];
-            for (let serie of result.content) {
+            const result = (typeof data.data) === 'string' ? JSON.parse(data.data) : data.data;
+            const tiles = [];
+            for (const serie of result.content) {
                 tiles.push(createMangaTile({
                     id: serie.id,
                     title: createIconText({ text: serie.metadata.title }),
@@ -2915,10 +2915,10 @@ exports.KomgaCommon = KomgaCommon;
 KomgaCommon.getServerUnavailableMangaTiles = () => {
     // This tile is used as a placeholder when the server is unavailable
     return [createMangaTile({
-            id: "placeholder-id",
-            title: createIconText({ text: "Server" }),
-            image: "",
-            subtitleText: createIconText({ text: "unavailable" }),
+            id: 'placeholder-id',
+            title: createIconText({ text: 'Server' }),
+            image: '',
+            subtitleText: createIconText({ text: 'unavailable' }),
         })];
 };
 
@@ -2938,20 +2938,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetSettingsButton = exports.testServerSettingsMenu = exports.serverSettingsMenu = exports.testServerSettings = exports.retrieveStateData = exports.createKomgaAPI = exports.createAuthorizationString = void 0;
 /* Helper functions */
 const createAuthorizationString = (username, password) => {
-    return "Basic " + Buffer.from(username + ":" + password, 'binary').toString('base64');
+    return 'Basic ' + Buffer.from(username + ':' + password, 'binary').toString('base64');
 };
 exports.createAuthorizationString = createAuthorizationString;
 const createKomgaAPI = (serverAddress) => {
-    return serverAddress + (serverAddress.slice(-1) === "/" ? "api/v1" : "/api/v1");
+    return serverAddress + (serverAddress.slice(-1) === '/' ? 'api/v1' : '/api/v1');
 };
 exports.createKomgaAPI = createKomgaAPI;
 const retrieveStateData = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
     // Return serverURL, serverUsername and serverPassword saved in the source.
     // Used to show already saved data in settings
     var _a, _b, _c;
-    const serverURL = (_a = (yield stateManager.retrieve('serverAddress'))) !== null && _a !== void 0 ? _a : "";
-    const serverUsername = (_b = (yield stateManager.retrieve('serverUsername'))) !== null && _b !== void 0 ? _b : "";
-    const serverPassword = (_c = (yield stateManager.retrieve('serverPassword'))) !== null && _c !== void 0 ? _c : "";
+    const serverURL = (_a = (yield stateManager.retrieve('serverAddress'))) !== null && _a !== void 0 ? _a : '';
+    const serverUsername = (_b = (yield stateManager.retrieve('serverUsername'))) !== null && _b !== void 0 ? _b : '';
+    const serverPassword = (_c = (yield stateManager.retrieve('serverPassword'))) !== null && _c !== void 0 ? _c : '';
     return {
         serverURL: serverURL,
         serverUsername: serverUsername,
@@ -2965,17 +2965,17 @@ const testServerSettings = (stateManager, requestManager) => __awaiter(void 0, v
     const authorization = yield stateManager.retrieve('authorization');
     // We check credentials are set in server settings
     if (komgaAPI === null || authorization === null) {
-        return "Impossible: Unset credentials in server settings";
+        return 'Impossible: Unset credentials in server settings';
     }
     // To test these information, we try to make a connection to the server
     // We could use a better endpoint to test the connection
-    let request = createRequestObject({
+    const request = createRequestObject({
         url: `${komgaAPI}/libraries/`,
-        method: "GET",
+        method: 'GET',
         incognito: true,
         headers: { authorization: authorization }
     });
-    var responseStatus = undefined;
+    let responseStatus = undefined;
     try {
         const response = yield requestManager.schedule(request, 1);
         responseStatus = response.status;
@@ -2986,10 +2986,10 @@ const testServerSettings = (stateManager, requestManager) => __awaiter(void 0, v
     }
     switch (responseStatus) {
         case 200: {
-            return "Successful connection!";
+            return 'Successful connection!';
         }
         case 401: {
-            return "Error 401 Unauthorized: Invalid credentials";
+            return 'Error 401 Unauthorized: Invalid credentials';
         }
         default: {
             return `Error ${responseStatus}`;
@@ -3020,21 +3020,21 @@ const serverSettingsMenu = (stateManager) => {
             sections: () => {
                 return Promise.resolve([
                     createSection({
-                        id: "information",
-                        header: "Komga",
+                        id: 'information',
+                        header: 'Komga',
                         rows: () => {
                             return Promise.resolve([
                                 createMultilineLabel({
-                                    label: "Enter your Komga server credentials\n\nA demonstration server is available on:\nhttps://komga.org/guides/#demo\n\nMinimal Komga version: v0.100.0",
-                                    value: "",
-                                    id: "description"
+                                    label: 'Enter your Komga server credentials\n\nA demonstration server is available on:\nhttps://komga.org/guides/#demo\n\nMinimal Komga version: v0.100.0',
+                                    value: '',
+                                    id: 'description'
                                 })
                             ]);
                         }
                     }),
                     createSection({
-                        id: "serverSettings",
-                        header: "Server Settings",
+                        id: 'serverSettings',
+                        header: 'Server Settings',
                         rows: () => {
                             return exports.retrieveStateData(stateManager).then((values) => __awaiter(void 0, void 0, void 0, function* () {
                                 return [
@@ -3084,15 +3084,15 @@ const testServerSettingsMenu = (stateManager, requestManager) => {
             sections: () => {
                 return Promise.resolve([
                     createSection({
-                        id: "information",
-                        header: "Connection to Komga server:",
+                        id: 'information',
+                        header: 'Connection to Komga server:',
                         rows: () => {
                             return exports.testServerSettings(stateManager, requestManager).then((value) => __awaiter(void 0, void 0, void 0, function* () {
                                 return [
                                     createLabel({
                                         label: value,
-                                        value: "",
-                                        id: "description"
+                                        value: '',
+                                        id: 'description'
                                     })
                                 ];
                             }));

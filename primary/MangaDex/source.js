@@ -1119,7 +1119,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                 }
             }
             // If the user want to see recommendations on the homepage, we process them
-            if (MangaDexSettings_1.getEnabledRecommendations(this.stateManager)) {
+            if (yield MangaDexSettings_1.getEnabledRecommendations(this.stateManager)) {
                 const recommendedIds = yield MangaDexSimilarManga_1.getRecommendedIds(this.stateManager);
                 for (const recommendedId of recommendedIds) {
                     // First we fetch similar titles
