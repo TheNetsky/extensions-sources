@@ -48,7 +48,7 @@ import { KomgaCommon } from './KomgaCommon'
 //  - search method which is called even if the user search in an other source
 
 export const KomgaInfo: SourceInfo = {
-    version: "1.2.0",
+    version: "1.2.1",
     name: "Komga",
     icon: "icon.png",
     author: "Lemon",
@@ -158,6 +158,7 @@ export class Komga extends Source {
 
     requestManager = createRequestManager({
         requestsPerSecond: 4,
+        requestTimeout: 20000,
         interceptor: new KomgaRequestInterceptor(this.stateManager)
     })
 
