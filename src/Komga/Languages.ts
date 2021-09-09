@@ -53,4 +53,4 @@ export const parseLangCode = (code: string) => {
 
     // Other are two letters codes
     return reverseLangCode[code.substr(0,2)] ?? LanguageCode.UNKNOWN
-  }
+}

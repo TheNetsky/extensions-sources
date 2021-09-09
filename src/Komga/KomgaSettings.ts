@@ -7,20 +7,20 @@ import {
 
 /* Helper functions */
 
-export const createAuthorizationString = (username: String, password: String): string => {
-    return "Basic " + Buffer.from(username + ":" + password, 'binary').toString('base64')
+export const createAuthorizationString = (username: string, password: string): string => {
+    return 'Basic ' + Buffer.from(username + ':' + password, 'binary').toString('base64')
 }
-export const createKomgaAPI = (serverAddress: String): string => {
-    return serverAddress + (serverAddress.slice(-1) === "/" ? "api/v1" : "/api/v1")
+export const createKomgaAPI = (serverAddress: string): string => {
+    return serverAddress + (serverAddress.slice(-1) === '/' ? 'api/v1' : '/api/v1')
 }
 
 export const retrieveStateData = async(stateManager: SourceStateManager) => {
     // Return serverURL, serverUsername and serverPassword saved in the source.
     // Used to show already saved data in settings
 
-    const serverURL = (await stateManager.retrieve('serverAddress') as string) ?? ""
-    const serverUsername = (await stateManager.retrieve('serverUsername') as string) ?? ""
-    const serverPassword = (await stateManager.retrieve('serverPassword') as string) ?? ""
+    const serverURL = (await stateManager.retrieve('serverAddress') as string) ?? ''
+    const serverUsername = (await stateManager.retrieve('serverUsername') as string) ?? ''
+    const serverPassword = (await stateManager.retrieve('serverPassword') as string) ?? ''
     return {
         serverURL: serverURL,
         serverUsername: serverUsername,
@@ -36,34 +36,34 @@ export const testServerSettings = async(stateManager: SourceStateManager, reques
 
     // We check credentials are set in server settings
     if (komgaAPI === null || authorization === null) {
-        return "Impossible: Unset credentials in server settings"
+        return 'Impossible: Unset credentials in server settings'
     }
 
     // To test these information, we try to make a connection to the server
     // We could use a better endpoint to test the connection
-    let request = createRequestObject({
+    const request = createRequestObject({
         url: `${komgaAPI}/libraries/`,
-        method: "GET",
+        method: 'GET',
         incognito: true, // We don't want the authorization to be cached
         headers: { authorization: authorization }
     })
 
-    var responseStatus = undefined
+    let responseStatus = undefined
 
     try {
         const response = await requestManager.schedule(request, 1)
         responseStatus = response.status
-    } catch (error) {
+    } catch (error: any) {
         // If the server is unavailable error.message will be 'AsyncOperationTimedOutError'
         return `Failed: Could not connect to server - ${error.message}`
     }
         
     switch(responseStatus) { 
         case 200: {
-            return "Successful connection!"
+            return 'Successful connection!'
         }
         case 401: {
-            return "Error 401 Unauthorized: Invalid credentials"
+            return 'Error 401 Unauthorized: Invalid credentials'
         }
         default: {
             return `Error ${responseStatus}`
@@ -95,21 +95,21 @@ export const serverSettingsMenu = (stateManager: SourceStateManager): Navigation
             sections: () => {
                 return Promise.resolve([
                     createSection({
-                        id: "information",
-                        header: "Komga",
+                        id: 'information',
+                        header: 'Komga',
                         rows: () => {
                             return Promise.resolve([
                                 createMultilineLabel({
-                                    label: "Enter your Komga server credentials\n\nA demonstration server is available on:\nhttps://komga.org/guides/#demo\n\nMinimal Komga version: v0.100.0",
-                                    value: "",
-                                    id: "description"
+                                    label: 'Enter your Komga server credentials\n\nA demonstration server is available on:\nhttps://komga.org/guides/#demo\n\nMinimal Komga version: v0.100.0',
+                                    value: '',
+                                    id: 'description'
                                 })
                             ])
                         }
                     }),
                     createSection({
-                        id: "serverSettings",
-                        header: "Server Settings",
+                        id: 'serverSettings',
+                        header: 'Server Settings',
                         rows: () => {
                             return retrieveStateData(stateManager).then(async values => {
                                 return [
@@ -159,15 +159,15 @@ export const testServerSettingsMenu = (stateManager: SourceStateManager, request
             sections: () => {
                 return Promise.resolve([
                     createSection({
-                        id: "information",
-                        header: "Connection to Komga server:",
+                        id: 'information',
+                        header: 'Connection to Komga server:',
                         rows: () => {
                             return testServerSettings(stateManager, requestManager).then(async value => {
                                 return [
                                     createLabel({
                                         label: value,
-                                        value: "",
-                                        id: "description"
+                                        value: '',
+                                        id: 'description'
                                     })
                                 ]
                             })

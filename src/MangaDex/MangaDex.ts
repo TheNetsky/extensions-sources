@@ -521,7 +521,7 @@ export class MangaDex extends Source {
         }
 
         // If the user want to see recommendations on the homepage, we process them
-        if (getEnabledRecommendations(this.stateManager)) {
+        if (await getEnabledRecommendations(this.stateManager)) {
             const recommendedIds = await getRecommendedIds(this.stateManager)
 
             for (const recommendedId of recommendedIds) {

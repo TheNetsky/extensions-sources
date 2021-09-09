@@ -18,9 +18,9 @@ import {
     SourceStateManager,
     TagSection,
     TagType
-  } from "paperback-extensions-common"
+} from 'paperback-extensions-common'
 
-import { parseLangCode } from "./Languages"
+import { parseLangCode } from './Languages'
 
 import {
     serverSettingsMenu,
@@ -48,43 +48,43 @@ import { KomgaCommon } from './KomgaCommon'
 //  - search method which is called even if the user search in an other source
 
 export const KomgaInfo: SourceInfo = {
-    version: "1.2.1",
-    name: "Komga",
-    icon: "icon.png",
-    author: "Lemon",
-    authorWebsite: "https://github.com/FramboisePi",
-    description: "Extension that pulls manga from a Komga server",
+    version: '1.2.2',
+    name: 'Komga',
+    icon: 'icon.png',
+    author: 'Lemon',
+    authorWebsite: 'https://github.com/FramboisePi',
+    description: 'Extension that pulls manga from a Komga server',
     contentRating: ContentRating.EVERYONE,
-    websiteBaseURL: "https://komga.org",
+    websiteBaseURL: 'https://komga.org',
     sourceTags: [
         {
-            text: "Self hosted",
+            text: 'Self hosted',
             type: TagType.RED
         }
     ]
 }
 
-const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"]
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
 
 // Number of items requested for paged requests
 const PAGE_SIZE = 40
 
 export const parseMangaStatus = (komgaStatus: string) => {
     switch (komgaStatus) {
-        case "ENDED":
+        case 'ENDED':
             return MangaStatus.COMPLETED
-        case "ONGOING":
+        case 'ONGOING':
             return MangaStatus.ONGOING
-        case "ABANDONED":
+        case 'ABANDONED':
             return MangaStatus.ONGOING
-        case "HIATUS":
+        case 'HIATUS':
             return MangaStatus.ONGOING
-  } 
-  return MangaStatus.ONGOING
+    } 
+    return MangaStatus.ONGOING
 }
 
 export const capitalize = (tag: string) => {
-    return tag.replace(/^\w/, (c) => c.toUpperCase());
+    return tag.replace(/^\w/, (c) => c.toUpperCase())
 }
 
 export class KomgaRequestInterceptor implements RequestInterceptor {
@@ -101,10 +101,10 @@ export class KomgaRequestInterceptor implements RequestInterceptor {
     }
 
     async getAuthorizationString(): Promise<string> {
-        const authorizationString = await this.stateManager.retrieve("authorization") as string
+        const authorizationString = await this.stateManager.retrieve('authorization') as string
 
         if (authorizationString === null) {
-            throw new Error("Unset credentials in source settings")
+            throw new Error('Unset credentials in source settings')
         }
         return authorizationString
     }
@@ -131,25 +131,25 @@ export class KomgaRequestInterceptor implements RequestInterceptor {
 
         return request
     }
-    }
+}
 
 
 export class Komga extends Source {
 
     async getAuthorizationString(): Promise<string> {
-        const authorizationString = await this.stateManager.retrieve("authorization") as string
+        const authorizationString = await this.stateManager.retrieve('authorization') as string
 
         if (authorizationString === null) {
-            throw new Error("Unset credentials in source settings")
+            throw new Error('Unset credentials in source settings')
         }
         return authorizationString
     }
 
     async getKomgaAPI(): Promise<string> {
-        const komgaAPI = await this.stateManager.retrieve("komgaAPI") as string
+        const komgaAPI = await this.stateManager.retrieve('komgaAPI') as string
 
         if (komgaAPI === null) {
-            throw new Error("Unset server URL in source settings")
+            throw new Error('Unset server URL in source settings')
         }
         return komgaAPI
     }
@@ -193,13 +193,13 @@ export class Komga extends Source {
 
             const genresRequest = createRequestObject({
                 url: `${komgaAPI}/genres/`,
-                method: "GET",
+                method: 'GET',
             })
             genresResponse = await this.requestManager.schedule(genresRequest, 1)
 
             const tagsRequest = createRequestObject({
                 url: `${komgaAPI}/tags/series/`,
-                method: "GET",
+                method: 'GET',
             })
             tagsResponse = await this.requestManager.schedule(tagsRequest, 1)
 
@@ -210,8 +210,8 @@ export class Komga extends Source {
 
         // The following part of the function should throw if there is an error and thus is not in the try/catch block
 
-        const genresResult = (typeof genresResponse.data) === "string" ? JSON.parse(genresResponse.data) : genresResponse.data
-        const tagsResult = (typeof tagsResponse.data) === "string" ? JSON.parse(tagsResponse.data) : tagsResponse.data
+        const genresResult = (typeof genresResponse.data) === 'string' ? JSON.parse(genresResponse.data) : genresResponse.data
+        const tagsResult = (typeof tagsResponse.data) === 'string' ? JSON.parse(tagsResponse.data) : tagsResponse.data
 
         const tagSections: TagSection[] = [
             createTagSection({ id: '0', label: 'genres', tags: [] }),
@@ -219,8 +219,8 @@ export class Komga extends Source {
         ]
 
         // For each tag, we append a type identifier to its id and capitalize its label
-        tagSections[0]!.tags = genresResult.map((elem: string) => createTag({ id: "genre-" + elem, label: capitalize(elem) }))
-        tagSections[1]!.tags = tagsResult.map((elem: string) => createTag({ id: "tag-" + elem, label: capitalize(elem) }))
+        tagSections[0]!.tags = genresResult.map((elem: string) => createTag({ id: 'genre-' + elem, label: capitalize(elem) }))
+        tagSections[1]!.tags = tagsResult.map((elem: string) => createTag({ id: 'tag-' + elem, label: capitalize(elem) }))
 
         return tagSections
     }
@@ -233,11 +233,11 @@ export class Komga extends Source {
 
         const request = createRequestObject({
             url: `${komgaAPI}/series/${mangaId}/`,
-            method: "GET",
+            method: 'GET',
         })
 
         const response = await this.requestManager.schedule(request, 1)
-        const result = (typeof response.data) === "string" ? JSON.parse(response.data) : response.data
+        const result = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         const metadata = result.metadata
         const booksMetadata = result.booksMetadata
@@ -247,18 +247,18 @@ export class Komga extends Source {
             createTagSection({ id: '1', label: 'tags', tags: [] })
         ]
         // For each tag, we append a type identifier to its id and capitalize its label
-        tagSections[0]!.tags = metadata.genres.map((elem: string) => createTag({ id: "genre-" + elem, label: capitalize(elem) }))
-        tagSections[1]!.tags = metadata.tags.map((elem: string) => createTag({ id: "tag-" + elem, label: capitalize(elem) }))
+        tagSections[0]!.tags = metadata.genres.map((elem: string) => createTag({ id: 'genre-' + elem, label: capitalize(elem) }))
+        tagSections[1]!.tags = metadata.tags.map((elem: string) => createTag({ id: 'tag-' + elem, label: capitalize(elem) }))
 
-        let authors: string[] = []
-        let artists: string[] = []
+        const authors: string[] = []
+        const artists: string[] = []
 
         // Additional roles: colorist, inker, letterer, cover, editor
-        for (let entry of booksMetadata.authors) {
-            if (entry.role === "writer") {
+        for (const entry of booksMetadata.authors) {
+            if (entry.role === 'writer') {
                 authors.push(entry.name)
             }
-            if (entry.role === "penciller") {
+            if (entry.role === 'penciller') {
                 artists.push(entry.name)
             }
         }
@@ -271,8 +271,8 @@ export class Komga extends Source {
             langFlag: metadata.language,
             // Unused: langName
 
-            artist: artists.join(", "),
-            author: authors.join(", "),
+            artist: artists.join(', '),
+            author: authors.join(', '),
 
             desc: (metadata.summary ? metadata.summary : booksMetadata.summary),
             tags: tagSections,
@@ -290,25 +290,25 @@ export class Komga extends Source {
 
         const booksRequest = createRequestObject({
             url: `${komgaAPI}/series/${mangaId}/books`,
-            param: "?unpaged=true&media_status=READY&deleted=false",
-            method: "GET",
+            param: '?unpaged=true&media_status=READY&deleted=false',
+            method: 'GET',
         })
 
         const booksResponse = await this.requestManager.schedule(booksRequest, 1)
-        const booksResult = (typeof booksResponse.data) === "string" ? JSON.parse(booksResponse.data) : booksResponse.data
+        const booksResult = (typeof booksResponse.data) === 'string' ? JSON.parse(booksResponse.data) : booksResponse.data
 
-        let chapters: Chapter[] = []
+        const chapters: Chapter[] = []
 
         // Chapters language is only available on the serie page
         const serieRequest = createRequestObject({
             url: `${komgaAPI}/series/${mangaId}/`,
-            method: "GET",
+            method: 'GET',
         })
         const serieResponse = await this.requestManager.schedule(serieRequest, 1)
-        const serieResult = (typeof serieResponse.data) === "string" ? JSON.parse(serieResponse.data) : serieResponse.data
+        const serieResult = (typeof serieResponse.data) === 'string' ? JSON.parse(serieResponse.data) : serieResponse.data
         const languageCode = parseLangCode(serieResult.metadata.language)
 
-        for (let book of booksResult.content) {
+        for (const book of booksResult.content) {
             chapters.push(
                 createChapter({
                     id: book.id,
@@ -330,14 +330,14 @@ export class Komga extends Source {
 
         const request = createRequestObject({
             url: `${komgaAPI}/books/${chapterId}/pages`,
-            method: "GET",
+            method: 'GET',
         })
 
         const data = await this.requestManager.schedule(request, 1)
-        const result = (typeof data.data === "string") ? JSON.parse(data.data) : data.data
+        const result = (typeof data.data === 'string') ? JSON.parse(data.data) : data.data
 
-        let pages: string[] = []
-        for (let page of result) {
+        const pages: string[] = []
+        for (const page of result) {
             if (SUPPORTED_IMAGE_TYPES.includes(page.mediaType)) {
                 pages.push(`${komgaAPI}/books/${chapterId}/pages/${page.number}`)
             } else {
@@ -348,14 +348,14 @@ export class Komga extends Source {
         // Determine the preferred reading direction which is only available in the serie metadata
         const serieRequest = createRequestObject({
             url: `${komgaAPI}/series/${mangaId}/`,
-            method: "GET",
+            method: 'GET',
         })
 
         const serieResponse = await this.requestManager.schedule(serieRequest, 1)
-        const serieResult = typeof serieResponse.data === "string" ? JSON.parse(serieResponse.data) : serieResponse.data
+        const serieResult = typeof serieResponse.data === 'string' ? JSON.parse(serieResponse.data) : serieResponse.data
 
         let longStrip = false
-        if (["VERTICAL", "WEBTOON"].includes(serieResult.metadata.readingDirection)) {
+        if (['VERTICAL', 'WEBTOON'].includes(serieResult.metadata.readingDirection)) {
             longStrip = true
         }
 
@@ -368,7 +368,7 @@ export class Komga extends Source {
     }
 
 
-    async searchRequest(searchQuery: SearchRequest, metadata: any): Promise<PagedResults> {
+    override async getSearchResults(searchQuery: SearchRequest, metadata: any): Promise<PagedResults> {
         // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
         
         return KomgaCommon.searchRequest(searchQuery, metadata, this.requestManager, this.stateManager, PAGE_SIZE)
@@ -379,10 +379,10 @@ export class Komga extends Source {
 
         // We won't use `await this.getKomgaAPI()` as we do not want to throw an error on
         // the homepage when server settings are not set
-        const komgaAPI = await this.stateManager.retrieve("komgaAPI")
+        const komgaAPI = await this.stateManager.retrieve('komgaAPI')
 
         if (komgaAPI === null) {
-            console.log("searchRequest failed because server settings are unset")
+            console.log('searchRequest failed because server settings are unset')
             const section = createHomeSection({
                 id: 'unset',
                 title: 'Go to source settings to set your Komga server credentials.',
@@ -415,17 +415,17 @@ export class Komga extends Source {
 
             const request = createRequestObject({
                 url: `${komgaAPI}/series/${section.id}`,
-                param: "?page=0&size=20&deleted=false",
-                method: "GET",
+                param: '?page=0&size=20&deleted=false',
+                method: 'GET',
             })
 
             // Get the section data
             promises.push(
                 this.requestManager.schedule(request, 1).then(data => {
-                    let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data
+                    const result = typeof data.data === 'string' ? JSON.parse(data.data) : data.data
 
-                    let tiles = []
-                    for (let serie of result.content) {
+                    const tiles = []
+                    for (const serie of result.content) {
                         tiles.push(createMangaTile({
                             id: serie.id,
                             title: createIconText({ text: serie.metadata.title }),
@@ -445,19 +445,19 @@ export class Komga extends Source {
     override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
 
         const komgaAPI = await this.getKomgaAPI()
-        let page: number = metadata?.page ?? 0
+        const page: number = metadata?.page ?? 0
 
         const request = createRequestObject({
             url: `${komgaAPI}/series/${homepageSectionId}`,
             param: `?page=${page}&size=${PAGE_SIZE}&deleted=false`,
-            method: "GET",
+            method: 'GET',
         })
 
         const data = await this.requestManager.schedule(request, 1)
-        const result = typeof data.data === "string" ? JSON.parse(data.data) : data.data
+        const result = typeof data.data === 'string' ? JSON.parse(data.data) : data.data
 
-        let tiles: MangaTile[] = []
-        for (let serie of result.content) {
+        const tiles: MangaTile[] = []
+        for (const serie of result.content) {
             tiles.push(createMangaTile({
                 id: serie.id,
                 title: createIconText({ text: serie.metadata.title }),
@@ -481,7 +481,7 @@ export class Komga extends Source {
         // We make requests of PAGE_SIZE titles to `series/updated/` until we got every titles 
         // or we got a title which `lastModified` metadata is older than `time`
         let page = 0
-        let foundIds: string[] = []
+        const foundIds: string[] = []
         let loadMore = true
 
         while (loadMore) {
@@ -489,14 +489,14 @@ export class Komga extends Source {
             const request = createRequestObject({
                 url: `${komgaAPI}/series/updated/`,
                 param: `?page=${page}&size=${PAGE_SIZE}&deleted=false`,
-                method: "GET",
+                method: 'GET',
             })
 
             const data = await this.requestManager.schedule(request, 1)
-            let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data
+            const result = typeof data.data === 'string' ? JSON.parse(data.data) : data.data
 
-            for (let serie of result.content) {
-                let serieUpdated = new Date(serie.metadata.lastModified)
+            for (const serie of result.content) {
+                const serieUpdated = new Date(serie.metadata.lastModified)
 
                 if (serieUpdated >= time) {
                     if (ids.includes(serie)) {
@@ -518,7 +518,7 @@ export class Komga extends Source {
 
             if (foundIds.length > 0) {
                 mangaUpdatesFoundCallback(createMangaUpdates({
-                ids: foundIds
+                    ids: foundIds
                 }))
             }
         }
