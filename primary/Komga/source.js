@@ -2141,7 +2141,7 @@ __exportStar(require("./base"), exports);
 __exportStar(require("./models"), exports);
 __exportStar(require("./APIWrapper"), exports);
 
-},{"./APIWrapper":2,"./base":7,"./models":49}],9:[function(require,module,exports){
+},{"./APIWrapper":2,"./base":7,"./models":50}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -2300,6 +2300,8 @@ arguments[4][9][0].apply(exports,arguments)
 },{"dup":9}],39:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
 },{"dup":9}],40:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"dup":9}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SearchOperator = void 0;
@@ -2309,7 +2311,7 @@ var SearchOperator;
     SearchOperator["OR"] = "OR";
 })(SearchOperator = exports.SearchOperator || (exports.SearchOperator = {}));
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContentRating = void 0;
@@ -2323,11 +2325,11 @@ var ContentRating;
     ContentRating["ADULT"] = "ADULT";
 })(ContentRating = exports.ContentRating || (exports.ContentRating = {}));
 
-},{}],42:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"dup":9}],43:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
 },{"dup":9}],44:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"dup":9}],45:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TagType = void 0;
@@ -2345,15 +2347,15 @@ var TagType;
     TagType["RED"] = "danger";
 })(TagType = exports.TagType || (exports.TagType = {}));
 
-},{}],45:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"dup":9}],46:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
 },{"dup":9}],47:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
 },{"dup":9}],48:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
 },{"dup":9}],49:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"dup":9}],50:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -2391,8 +2393,9 @@ __exportStar(require("./SourceManga"), exports);
 __exportStar(require("./TrackedMangaChapterReadAction"), exports);
 __exportStar(require("./TrackerActionQueue"), exports);
 __exportStar(require("./SearchField"), exports);
+__exportStar(require("./RawData"), exports);
 
-},{"./Chapter":9,"./ChapterDetails":10,"./Constants":11,"./DynamicUI":27,"./HomeSection":28,"./Languages":29,"./Manga":30,"./MangaTile":31,"./MangaUpdate":32,"./PagedResults":33,"./RequestHeaders":34,"./RequestInterceptor":35,"./RequestManager":36,"./RequestObject":37,"./ResponseObject":38,"./SearchField":39,"./SearchRequest":40,"./SourceInfo":41,"./SourceManga":42,"./SourceStateManager":43,"./SourceTag":44,"./TagSection":45,"./TrackedManga":46,"./TrackedMangaChapterReadAction":47,"./TrackerActionQueue":48}],50:[function(require,module,exports){
+},{"./Chapter":9,"./ChapterDetails":10,"./Constants":11,"./DynamicUI":27,"./HomeSection":28,"./Languages":29,"./Manga":30,"./MangaTile":31,"./MangaUpdate":32,"./PagedResults":33,"./RawData":34,"./RequestHeaders":35,"./RequestInterceptor":36,"./RequestManager":37,"./RequestObject":38,"./ResponseObject":39,"./SearchField":40,"./SearchRequest":41,"./SourceInfo":42,"./SourceManga":43,"./SourceStateManager":44,"./SourceTag":45,"./TagSection":46,"./TrackedManga":47,"./TrackedMangaChapterReadAction":48,"./TrackerActionQueue":49}],51:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -2831,7 +2834,7 @@ class Komga extends paperback_extensions_common_1.Source {
 }
 exports.Komga = Komga;
 
-},{"./KomgaCommon":51,"./KomgaSettings":52,"./Languages":53,"paperback-extensions-common":8}],51:[function(require,module,exports){
+},{"./KomgaCommon":52,"./KomgaSettings":53,"./Languages":54,"paperback-extensions-common":8}],52:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -2922,7 +2925,7 @@ KomgaCommon.getServerUnavailableMangaTiles = () => {
         })];
 };
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (Buffer){(function (){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -3123,7 +3126,7 @@ const resetSettingsButton = (stateManager) => {
 exports.resetSettingsButton = resetSettingsButton;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":3}],53:[function(require,module,exports){
+},{"buffer":3}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseLangCode = void 0;
@@ -3182,5 +3185,5 @@ const parseLangCode = (code) => {
 };
 exports.parseLangCode = parseLangCode;
 
-},{"paperback-extensions-common":8}]},{},[50])(50)
+},{"paperback-extensions-common":8}]},{},[51])(51)
 });
