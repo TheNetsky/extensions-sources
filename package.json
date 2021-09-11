@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "paperback-cli": "^1.4.0",
-    "paperback-extensions-common": "^4.3.1"
+    "paperback-extensions-common": "^4.3.5",
+    "ts-node": "^10.2.1"
   }
 }

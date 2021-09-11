@@ -199,7 +199,8 @@ export const resetSettings = (stateManager: SourceStateManager): Button => {
 }
 
 export const getEnabledHomePageSections = async (stateManager: SourceStateManager): Promise<string[]> => {
-    return (await stateManager.retrieve('enabled_homepage_sections') as string[]) ?? MDHomepageSections.getDefault()
+    const enabled_homepage_sections: string[] = await stateManager.retrieve('enabled_homepage_sections') as string[]
+    return enabled_homepage_sections != undefined && enabled_homepage_sections.length > 0 ? enabled_homepage_sections : MDHomepageSections.getDefault()
 }
 
 export const getEnabledRecommendations = async (stateManager: SourceStateManager): Promise<boolean> => {

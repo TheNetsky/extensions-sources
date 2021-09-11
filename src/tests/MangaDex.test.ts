@@ -86,12 +86,4 @@ describe('MangaDex Tests', () => {
         expect(homePages[1], 'No updated shounen section available').to.exist
         expect(homePages[2], 'No updated action available').to.exist
     })
-
-    // it("Testing Notifications", async () => {
-    //     const updates = await wrapper.filterUpdatedManga(source, new Date("2021-05-01"), [mangaId]);
-    
-    //     expect(updates, "No server response").to.exist;
-    //     expect(updates, "Empty server response").to.not.be.empty;
-    //     expect(updates[0].ids, "No updates").to.not.be.empty;
-    // });
 })

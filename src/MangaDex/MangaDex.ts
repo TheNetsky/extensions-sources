@@ -175,7 +175,7 @@ export class MangaDex extends Source {
             .addQueryParameter('limit', 100)
             .addQueryParameter('contentRating', ratings)
             .addQueryParameter('includes', ['cover_art'])
-            .addQueryParameter('ids', json.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id))
+            .addQueryParameter('ids', json.data.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id))
             .buildUrl()
     }
 
@@ -198,7 +198,7 @@ export class MangaDex extends Source {
 
         for (const manga of json.results) {
             const mangaId = manga.data.id
-            const coverFileName = manga.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
+            const coverFileName = manga.data.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
 
             if (!mangaId || !coverFileName) continue
 
@@ -247,10 +247,10 @@ export class MangaDex extends Source {
             }))
         }
     
-        const author = json.relationships.filter((x: any) => x.type == 'author').map((x: any) => x.attributes.name).join(', ')
-        const artist = json.relationships.filter((x: any) => x.type == 'artist').map((x: any) => x.attributes.name).join(', ')
+        const author = json.data.relationships.filter((x: any) => x.type == 'author').map((x: any) => x.attributes.name).join(', ')
+        const artist = json.data.relationships.filter((x: any) => x.type == 'artist').map((x: any) => x.attributes.name).join(', ')
 
-        const coverFileName = json.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
+        const coverFileName = json.data.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
         let image: string
         if (coverFileName) {
             image = `${this.COVER_BASE_URL}/${mangaId}/${coverFileName}${MDImageQuality.getEnding(await getMangaThumbnail(this.stateManager))}`
@@ -321,7 +321,7 @@ export class MangaDex extends Source {
                 const volume = Number(chapterDetails?.volume)
                 const langCode: any = MDLanguages.getPBCode(chapterDetails.translatedLanguage)
                 const time = new Date(chapterDetails.publishAt)
-                const group = chapter.relationships.filter((x: any) => x.type == 'scanlation_group').map((x: any) => x.attributes.name).join(', ')
+                const group = chapter.data.relationships.filter((x: any) => x.type == 'scanlation_group').map((x: any) => x.attributes.name).join(', ')
 
                 const identifier = `${volume}-${chapNum}-${chapterDetails.translatedLanguage}`
                 if (!collectedChapters.includes(identifier) || !skipSameChapter) {
@@ -462,6 +462,7 @@ export class MangaDex extends Source {
                     url: new URLBuilder(this.MANGADEX_API)
                         .addPathComponent('manga')
                         .addQueryParameter('limit', 20)
+                        .addQueryParameter('order', {'followedCount': 'desc'})
                         .addQueryParameter('contentRating', ratings)
                         .addQueryParameter('includes', ['cover_art'])
                         .buildUrl(),
@@ -508,7 +509,7 @@ export class MangaDex extends Source {
 
                         switch(section.section.id) {
                             case 'latest_updates':
-                                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
+                                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.data.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
                                 section.section.items = await parseChapterList(json.results, coversMapping, this, getHomepageThumbnail, ratings)
                                 break
                             default:
@@ -651,7 +652,7 @@ export class MangaDex extends Source {
 
         switch(homepageSectionId) {
             case 'latest_updates':
-                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
+                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.data.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
                 results = await parseChapterList(json.results, coversMapping, this, getHomepageThumbnail, ratings)
                 break
             default:
@@ -702,7 +703,7 @@ export class MangaDex extends Source {
 
             const mangaToUpdate: string[] = []
             for (const chapter of json.results) {
-                const mangaId = chapter.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
+                const mangaId = chapter.data.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
 
                 if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
                     mangaToUpdate.push(mangaId)
