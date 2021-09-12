@@ -69,7 +69,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.1',
+    version: '2.1.2',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -196,9 +196,9 @@ export class MangaDex extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        for (const manga of json.results) {
-            const mangaId = manga.data.id
-            const coverFileName = manga.data.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
+        for (const manga of json.data) {
+            const mangaId = manga.id
+            const coverFileName = manga.relationships.filter((x: any) => x.type == 'cover_art').map((x: any) => x.attributes?.fileName)[0]
 
             if (!mangaId || !coverFileName) continue
 
@@ -311,17 +311,17 @@ export class MangaDex extends Source {
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
             offset += 500
 
-            if(json.results === undefined) throw new Error(`Failed to parse json results for ${mangaId}`)
+            if(json.data === undefined) throw new Error(`Failed to parse json results for ${mangaId}`)
 
-            for (const chapter of json.results) {
-                const chapterId = chapter.data.id
-                const chapterDetails = chapter.data.attributes
+            for (const chapter of json.data) {
+                const chapterId = chapter.id
+                const chapterDetails = chapter.attributes
                 const name =  this.decodeHTMLEntity(chapterDetails.title)
                 const chapNum = Number(chapterDetails?.chapter)
                 const volume = Number(chapterDetails?.volume)
                 const langCode: any = MDLanguages.getPBCode(chapterDetails.translatedLanguage)
                 const time = new Date(chapterDetails.publishAt)
-                const group = chapter.data.relationships.filter((x: any) => x.type == 'scanlation_group').map((x: any) => x.attributes.name).join(', ')
+                const group = chapter.relationships.filter((x: any) => x.type == 'scanlation_group').map((x: any) => x.attributes.name).join(', ')
 
                 const identifier = `${volume}-${chapNum}-${chapterDetails.translatedLanguage}`
                 if (!collectedChapters.includes(identifier) || !skipSameChapter) {
@@ -425,9 +425,9 @@ export class MangaDex extends Source {
 
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        if(json.results === undefined) {throw new Error('Failed to parse json for the given search')}
+        if(json.data === undefined) {throw new Error('Failed to parse json for the given search')}
 
-        results = await parseMangaList(json.results, this, getSearchThumbnail)
+        results = await parseMangaList(json.data, this, getSearchThumbnail)
 
         return createPagedResults({
             results,
@@ -505,15 +505,15 @@ export class MangaDex extends Source {
                     this.requestManager.schedule(section.request, 1).then(async response => {
                         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-                        if(json.results === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
+                        if(json.data === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
 
                         switch(section.section.id) {
                             case 'latest_updates':
-                                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.data.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
-                                section.section.items = await parseChapterList(json.results, coversMapping, this, getHomepageThumbnail, ratings)
+                                const coversMapping = await this.getCoversMapping(json.data.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
+                                section.section.items = await parseChapterList(json.data, coversMapping, this, getHomepageThumbnail, ratings)
                                 break
                             default:
-                                section.section.items = await parseMangaList(json.results, this, getHomepageThumbnail)
+                                section.section.items = await parseMangaList(json.data, this, getHomepageThumbnail)
                         }
                         sectionCallback(section.section)
                     }),
@@ -648,15 +648,15 @@ export class MangaDex extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        if(json.results === undefined) throw new Error('Failed to parse json results for getViewMoreItems')
+        if(json.data === undefined) throw new Error('Failed to parse json results for getViewMoreItems')
 
         switch(homepageSectionId) {
             case 'latest_updates':
-                const coversMapping = await this.getCoversMapping(json.results.map((x: any) => x.data.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
-                results = await parseChapterList(json.results, coversMapping, this, getHomepageThumbnail, ratings)
+                const coversMapping = await this.getCoversMapping(json.data.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
+                results = await parseChapterList(json.data, coversMapping, this, getHomepageThumbnail, ratings)
                 break
             default:
-                results = await parseMangaList(json.results, this, getHomepageThumbnail)
+                results = await parseMangaList(json.data, this, getHomepageThumbnail)
         }
 
         return createPagedResults({
@@ -695,15 +695,15 @@ export class MangaDex extends Source {
 
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-            if(json.results === undefined) {
+            if(json.data === undefined) {
                 // Log this, no need to throw.
                 console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`)
                 return
             }
 
             const mangaToUpdate: string[] = []
-            for (const chapter of json.results) {
-                const mangaId = chapter.data.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
+            for (const chapter of json.data) {
+                const mangaId = chapter.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
 
                 if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
                     mangaToUpdate.push(mangaId)
