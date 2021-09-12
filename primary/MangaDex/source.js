@@ -709,7 +709,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.1',
+    version: '2.1.2',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -831,9 +831,9 @@ class MangaDex extends paperback_extensions_common_1.Source {
             });
             const response = yield this.requestManager.schedule(request, 1);
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-            for (const manga of json.results) {
-                const mangaId = manga.data.id;
-                const coverFileName = manga.data.relationships.filter((x) => x.type == 'cover_art').map((x) => { var _a; return (_a = x.attributes) === null || _a === void 0 ? void 0 : _a.fileName; })[0];
+            for (const manga of json.data) {
+                const mangaId = manga.id;
+                const coverFileName = manga.relationships.filter((x) => x.type == 'cover_art').map((x) => { var _a; return (_a = x.attributes) === null || _a === void 0 ? void 0 : _a.fileName; })[0];
                 if (!mangaId || !coverFileName)
                     continue;
                 mapping[mangaId] = coverFileName;
@@ -937,17 +937,17 @@ class MangaDex extends paperback_extensions_common_1.Source {
                 const response = yield this.requestManager.schedule(request, 1);
                 const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
                 offset += 500;
-                if (json.results === undefined)
+                if (json.data === undefined)
                     throw new Error(`Failed to parse json results for ${mangaId}`);
-                for (const chapter of json.results) {
-                    const chapterId = chapter.data.id;
-                    const chapterDetails = chapter.data.attributes;
+                for (const chapter of json.data) {
+                    const chapterId = chapter.id;
+                    const chapterDetails = chapter.attributes;
                     const name = this.decodeHTMLEntity(chapterDetails.title);
                     const chapNum = Number(chapterDetails === null || chapterDetails === void 0 ? void 0 : chapterDetails.chapter);
                     const volume = Number(chapterDetails === null || chapterDetails === void 0 ? void 0 : chapterDetails.volume);
                     const langCode = MangaDexHelper_1.MDLanguages.getPBCode(chapterDetails.translatedLanguage);
                     const time = new Date(chapterDetails.publishAt);
-                    const group = chapter.data.relationships.filter((x) => x.type == 'scanlation_group').map((x) => x.attributes.name).join(', ');
+                    const group = chapter.relationships.filter((x) => x.type == 'scanlation_group').map((x) => x.attributes.name).join(', ');
                     const identifier = `${volume}-${chapNum}-${chapterDetails.translatedLanguage}`;
                     if (!collectedChapters.includes(identifier) || !skipSameChapter) {
                         chapters.push(createChapter({
@@ -1035,10 +1035,10 @@ class MangaDex extends paperback_extensions_common_1.Source {
                 return createPagedResults({ results });
             }
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-            if (json.results === undefined) {
+            if (json.data === undefined) {
                 throw new Error('Failed to parse json for the given search');
             }
-            results = yield MangaDexParser_1.parseMangaList(json.results, this, MangaDexSettings_1.getSearchThumbnail);
+            results = yield MangaDexParser_1.parseMangaList(json.data, this, MangaDexSettings_1.getSearchThumbnail);
             return createPagedResults({
                 results,
                 metadata: { offset: offset + 100 }
@@ -1108,15 +1108,15 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     // Get the section data
                     promises.push(this.requestManager.schedule(section.request, 1).then((response) => __awaiter(this, void 0, void 0, function* () {
                         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-                        if (json.results === undefined)
+                        if (json.data === undefined)
                             throw new Error(`Failed to parse json results for section ${section.section.title}`);
                         switch (section.section.id) {
                             case 'latest_updates':
-                                const coversMapping = yield this.getCoversMapping(json.results.map((x) => x.data.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0]), ratings);
-                                section.section.items = yield MangaDexParser_1.parseChapterList(json.results, coversMapping, this, MangaDexSettings_1.getHomepageThumbnail, ratings);
+                                const coversMapping = yield this.getCoversMapping(json.data.map((x) => x.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0]), ratings);
+                                section.section.items = yield MangaDexParser_1.parseChapterList(json.data, coversMapping, this, MangaDexSettings_1.getHomepageThumbnail, ratings);
                                 break;
                             default:
-                                section.section.items = yield MangaDexParser_1.parseMangaList(json.results, this, MangaDexSettings_1.getHomepageThumbnail);
+                                section.section.items = yield MangaDexParser_1.parseMangaList(json.data, this, MangaDexSettings_1.getHomepageThumbnail);
                         }
                         sectionCallback(section.section);
                     })));
@@ -1240,15 +1240,15 @@ class MangaDex extends paperback_extensions_common_1.Source {
             });
             const response = yield this.requestManager.schedule(request, 1);
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-            if (json.results === undefined)
+            if (json.data === undefined)
                 throw new Error('Failed to parse json results for getViewMoreItems');
             switch (homepageSectionId) {
                 case 'latest_updates':
-                    const coversMapping = yield this.getCoversMapping(json.results.map((x) => x.data.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0]), ratings);
-                    results = yield MangaDexParser_1.parseChapterList(json.results, coversMapping, this, MangaDexSettings_1.getHomepageThumbnail, ratings);
+                    const coversMapping = yield this.getCoversMapping(json.data.map((x) => x.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0]), ratings);
+                    results = yield MangaDexParser_1.parseChapterList(json.data, coversMapping, this, MangaDexSettings_1.getHomepageThumbnail, ratings);
                     break;
                 default:
-                    results = yield MangaDexParser_1.parseMangaList(json.results, this, MangaDexSettings_1.getHomepageThumbnail);
+                    results = yield MangaDexParser_1.parseMangaList(json.data, this, MangaDexSettings_1.getHomepageThumbnail);
             }
             return createPagedResults({
                 results,
@@ -1283,14 +1283,14 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     return;
                 }
                 const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-                if (json.results === undefined) {
+                if (json.data === undefined) {
                     // Log this, no need to throw.
                     console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`);
                     return;
                 }
                 const mangaToUpdate = [];
-                for (const chapter of json.results) {
-                    const mangaId = (_a = chapter.data.relationships.filter((x) => x.type == 'manga')[0]) === null || _a === void 0 ? void 0 : _a.id;
+                for (const chapter of json.data) {
+                    const mangaId = (_a = chapter.relationships.filter((x) => x.type == 'manga')[0]) === null || _a === void 0 ? void 0 : _a.id;
                     if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
                         mangaToUpdate.push(mangaId);
                         updatedManga.push(mangaId);
@@ -1745,10 +1745,10 @@ const MangaDexHelper_1 = require("./MangaDexHelper");
 const parseMangaList = (object, source, thumbnailSelector) => __awaiter(void 0, void 0, void 0, function* () {
     const results = [];
     for (const manga of object) {
-        const mangaId = manga.data.id;
-        const mangaDetails = manga.data.attributes;
+        const mangaId = manga.id;
+        const mangaDetails = manga.attributes;
         const title = source.decodeHTMLEntity(Object.values(mangaDetails.title)[0]);
-        const coverFileName = manga.data.relationships.filter((x) => x.type == 'cover_art').map((x) => { var _a; return (_a = x.attributes) === null || _a === void 0 ? void 0 : _a.fileName; })[0];
+        const coverFileName = manga.relationships.filter((x) => x.type == 'cover_art').map((x) => { var _a; return (_a = x.attributes) === null || _a === void 0 ? void 0 : _a.fileName; })[0];
         const image = coverFileName ? `${source.COVER_BASE_URL}/${mangaId}/${coverFileName}${MangaDexHelper_1.MDImageQuality.getEnding(yield thumbnailSelector(source.stateManager))}` : 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg';
         results.push(createMangaTile({
             id: mangaId,
@@ -1762,14 +1762,14 @@ exports.parseMangaList = parseMangaList;
 const parseChapterList = (chapterObject, coversMapping, source, thumbnailSelector, ratings) => __awaiter(void 0, void 0, void 0, function* () {
     const results = [];
     for (const chapter of chapterObject) {
-        const mangaId = chapter.data.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0];
-        const title = chapter.data.relationships.filter((x) => x.type == 'manga').map((x) => x.attributes.title.en)[0];
-        const volume_num = chapter.data.attributes.volume;
-        const chapter_num = chapter.data.attributes.chapter;
+        const mangaId = chapter.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0];
+        const title = chapter.relationships.filter((x) => x.type == 'manga').map((x) => x.attributes.title.en)[0];
+        const volume_num = chapter.attributes.volume;
+        const chapter_num = chapter.attributes.chapter;
         const subtitle = `${volume_num ? `Vol. ${volume_num}` : ''} ${chapter_num ? `Ch. ${chapter_num}` : ''}`;
         const coverFileName = coversMapping[mangaId];
         const image = coverFileName ? `${source.COVER_BASE_URL}/${mangaId}/${coverFileName}${MangaDexHelper_1.MDImageQuality.getEnding(yield thumbnailSelector(source.stateManager))}` : 'https://mangadex.org/_nuxt/img/cover-placeholder.d12c3c5.jpg';
-        if (!mangaId || !title || !ratings.includes(chapter.data.relationships.filter((x) => x.type == 'manga').map((x) => x.attributes.contentRating)[0]))
+        if (!mangaId || !title || !ratings.includes(chapter.relationships.filter((x) => x.type == 'manga').map((x) => x.attributes.contentRating)[0]))
             continue;
         results.push(createMangaTile({
             id: mangaId,
