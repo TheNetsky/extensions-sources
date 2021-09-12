@@ -31,7 +31,7 @@ describe('MangaDex Tests', () => {
         expect(data.image, 'Missing Image').to.be.not.empty
         expect(data.status, 'Missing Status').to.exist
         expect(data.author, 'Missing Author').to.be.not.empty
-        expect(data.desc, 'Missing Description').to.be.not.empty
+        // expect(data.desc, 'Missing Description').to.be.not.empty
         expect(data.titles, 'Missing Titles').to.be.not.empty
         expect(data.rating, 'Missing Rating').to.exist
     })
@@ -85,5 +85,13 @@ describe('MangaDex Tests', () => {
         expect(homePages[0], 'No recently updated section available').to.exist
         expect(homePages[1], 'No updated shounen section available').to.exist
         expect(homePages[2], 'No updated action available').to.exist
+    })
+
+    it('Testing Notifications', async () => {
+        const updates = await wrapper.filterUpdatedManga(source, new Date('2021-09-11'), [mangaId])
+
+        expect(updates, 'No server response').to.exist
+        expect(updates, 'Empty server response').to.not.be.empty
+        expect(updates[0]?.ids, 'No updates').to.not.be.empty
     })
 })
