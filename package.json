@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "bundle": "paperback bundle",
-    "serve": "paperback serve"
+    "serve": "paperback serve",
+    "test": "paperback test"
   },
   "repository": {
     "type": "git",
@@ -32,8 +33,8 @@
     "typescript": "^4.3.2"
   },
   "dependencies": {
-    "paperback-cli": "^1.4.0",
-    "paperback-extensions-common": "^4.3.5",
+    "paperback-cli": "^2.0.0-alpha.9",
+    "paperback-extensions-common": "^5.0.0-alpha.4",
     "ts-node": "^10.2.1"
   }
 }

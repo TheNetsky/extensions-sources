@@ -28,7 +28,6 @@ export const addRecommendedId = async (stateManager: SourceStateManager, mangaId
     if (index > -1) {
         recommendedIds.splice(index, 1)
     }
-    
     // We add the id at the beginning of list
     recommendedIds.unshift(mangaId)
 
