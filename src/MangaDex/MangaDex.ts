@@ -69,7 +69,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.2',
+    version: '2.1.3',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -304,6 +304,7 @@ export class MangaDex extends Source {
                     .addQueryParameter('translatedLanguage', languages)
                     .addQueryParameter('order', {'volume': 'desc', 'chapter': 'desc', 'publishAt': 'desc'})
                     .addQueryParameter('contentRating', ratings)
+                    .addQueryParameter('includeFutureUpdates', '0')
                     .buildUrl(),
                 method: 'GET',
             })
@@ -482,6 +483,7 @@ export class MangaDex extends Source {
                         .addQueryParameter('order', {'publishAt': 'desc'})
                         .addQueryParameter('translatedLanguage', languages)
                         .addQueryParameter('includes', ['manga'])
+                        .addQueryParameter('includeFutureUpdates', '0')
                         .buildUrl(),
                     method: 'GET',
                 }),
@@ -621,6 +623,7 @@ export class MangaDex extends Source {
                 url = new URLBuilder(this.MANGADEX_API)
                     .addPathComponent('manga')
                     .addQueryParameter('limit', 100)
+                    .addQueryParameter('order', {'followedCount': 'desc'})
                     .addQueryParameter('offset', offset)
                     .addQueryParameter('contentRating', ratings)
                     .addQueryParameter('includes', ['cover_art'])
@@ -635,6 +638,7 @@ export class MangaDex extends Source {
                     .addQueryParameter('order', {'publishAt': 'desc'})
                     .addQueryParameter('translatedLanguage', languages)
                     .addQueryParameter('includes', ['manga'])
+                    .addQueryParameter('includeFutureUpdates', '0')
                     .buildUrl()
                 break
             }
@@ -682,6 +686,7 @@ export class MangaDex extends Source {
                     .addQueryParameter('publishAtSince', updatedAt)
                     .addQueryParameter('order', {'publishAt': 'desc'})
                     .addQueryParameter('translatedLanguage', languages)
+                    .addQueryParameter('includeFutureUpdates', '0')
                     .buildUrl(),
                 method: 'GET',
             })
