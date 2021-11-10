@@ -684,7 +684,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.3',
+    version: '2.1.4',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -1006,7 +1006,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
         const sections = [
             {
                 request: createRequestObject({
-                    url: await this.getCustomListRequestURL('a153b4e6-1fcc-4f45-a990-f37f989c0d74', ratings),
+                    url: await this.getCustomListRequestURL('d434f5f1-ff90-4fa5-be7c-2c070da79120', ratings),
                     method: 'GET',
                 }),
                 section: createHomeSection({
