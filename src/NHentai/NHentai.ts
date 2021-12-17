@@ -66,6 +66,10 @@ export class NHentai extends Source {
   });
 
   stateManager = createSourceStateManager({})
+  
+  getMangaShareUrl(mangaId: string): string {
+    return `${NHENTAI_URL}/g/${mangaId}`
+  }
 
 
   override async getSourceMenu(): Promise<Section> {
