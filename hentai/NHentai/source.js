@@ -440,6 +440,9 @@ class NHentai extends paperback_extensions_common_1.Source {
         });
         this.stateManager = createSourceStateManager({});
     }
+    getMangaShareUrl(mangaId) {
+        return `${NHENTAI_URL}/g/${mangaId}`;
+    }
     getSourceMenu() {
         return __awaiter(this, void 0, void 0, function* () {
             return Promise.resolve(createSection({
