@@ -38,7 +38,11 @@ import {
     getSkipSameChapter,
     homepageSettings,
     getEnabledRecommendations,
-    getEnabledHomePageSections
+    getEnabledHomePageSections,
+    accountSettings,
+    getAccessToken,
+    authEndpointRequest,
+    saveAccessToken
 } from './MangaDexSettings'
 import {
     requestMetadata,
@@ -69,7 +73,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.4',
+    version: '2.1.5',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -94,6 +98,43 @@ export class MangaDex extends Source {
     requestManager = createRequestManager({
         requestsPerSecond: 4,
         requestTimeout: 15000,
+        interceptor: {
+            interceptRequest: async (request) => {
+                // Impossible to have undefined headers, ensured by the app
+                request.headers = {
+                    ...request.headers!,
+                    referer: `${this.MANGADEX_DOMAIN}/`
+                }
+
+                var accessToken = await getAccessToken(this.stateManager)
+
+                if(request.url.includes('auth/') || !accessToken) return request
+
+                // Padding 60 secs to make sure it wont expire in-transit if the connection is really bad
+                if(Number(accessToken.tokenBody.exp) <= (Date.now()/1000) - 60) 
+                {
+                    try {
+                        const response = await authEndpointRequest(this.requestManager, 'refresh', {
+                            token: accessToken.refreshToken
+                        })
+
+                        accessToken = await saveAccessToken(this.stateManager, response.token.session, response.token.refresh) 
+                        if (!accessToken) return request
+                    } catch {
+                        return request
+                    }
+                }
+
+                // Impossible to have undefined headers, ensured by the app
+                request.headers = {
+                    ...request.headers!,
+                    authorization: 'Bearer ' + accessToken.accessToken
+                }
+
+                return request
+            },
+            interceptResponse: async (x) => x
+        }
     })
 
     stateManager = createSourceStateManager({})
@@ -102,23 +143,18 @@ export class MangaDex extends Source {
         return Promise.resolve(createSection({
             id: 'main',
             header: 'Source Settings',
-            rows: () => Promise.resolve([
+            rows: async () => [
+                await accountSettings(this.stateManager, this.requestManager),
                 contentSettings(this.stateManager),
                 thumbnailSettings(this.stateManager),
                 homepageSettings(this.stateManager),
                 resetSettings(this.stateManager),
-            ])
+            ]
         }))
     }
 
     override getMangaShareUrl(mangaId: string): string {
         return `${this.MANGADEX_DOMAIN}/title/${mangaId}`
-    }
-
-    override globalRequestHeaders(): RequestHeaders {
-        return {
-            referer: `${this.MANGADEX_DOMAIN}/`
-        }
     }
 
     override async getSearchTags(): Promise<TagSection[]> {
@@ -157,6 +193,8 @@ export class MangaDex extends Source {
     
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
+
+        console.log(`Using MD@H node: ${json.baseUrl}`)
 
         return json.baseUrl
     }

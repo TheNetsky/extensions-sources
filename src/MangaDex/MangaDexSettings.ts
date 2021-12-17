@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     Button,
+    FormRow,
     NavigationButton,
+    RequestManager,
     SourceStateManager,
 } from 'paperback-extensions-common'
 import {
@@ -109,6 +111,206 @@ export const getSearchThumbnail = async (stateManager: SourceStateManager): Prom
 
 export const getMangaThumbnail = async (stateManager: SourceStateManager): Promise<string> => {
     return (await stateManager.retrieve('manga_thumbnail') as string) ?? MDImageQuality.getDefault('manga')
+}
+
+export const getAccessToken = async (stateManager: SourceStateManager): Promise<{
+    accessToken: string
+    refreshToken: string | undefined
+    tokenBody: any | undefined
+} | undefined> => {
+    const accessToken = await stateManager.keychain.retrieve('access_token') as string | undefined
+    if (!accessToken) return undefined
+
+    const refreshToken = await stateManager.keychain.retrieve('refresh_token') as string | undefined
+
+    return {
+        accessToken,
+        refreshToken,
+        tokenBody: await parseAccessToken(accessToken)
+    }
+}
+
+export const saveAccessToken = async (stateManager: SourceStateManager, accessToken: string | undefined, refreshToken: string | undefined): Promise<{
+    accessToken: string
+    refreshToken: string | undefined
+    tokenBody: any | undefined
+} | undefined> => {
+    await Promise.all([
+        stateManager.keychain.store('access_token', accessToken),
+        stateManager.keychain.store('refresh_token', refreshToken)
+    ])
+
+    if(!accessToken) return undefined
+
+    const obj = {
+        accessToken,
+        refreshToken,
+        tokenBody: await parseAccessToken(accessToken)
+    }
+
+    return obj
+}
+
+export const parseAccessToken = async (accessToken: string | undefined): Promise<any | undefined> => {
+    if(!accessToken) return undefined
+
+    const tokenBodyBase64 = accessToken.split('.')[1]
+    if (!tokenBodyBase64) return undefined
+
+    const tokenBodyJSON = Buffer.from(tokenBodyBase64, 'base64').toString('ascii')
+    return JSON.parse(tokenBodyJSON)
+}
+
+export const authEndpointRequest = async (requestManager: RequestManager, endpoint: "login" | "refresh" | "logout", payload: any): Promise<any | undefined> => {
+    const response = await requestManager.schedule(createRequestObject({
+        method: 'POST',
+        url: 'https://api.mangadex.org/auth/' + endpoint,
+        headers: {
+            "content-type": 'application/json'
+        },
+        data: payload
+    }), 1)
+
+    if (response.status > 399) {
+        throw new Error('Request failed with error code:' + response.status)
+    }
+
+    const jsonData = typeof(response.data) === 'string' ? JSON.parse(response.data) : response.data
+    if (jsonData.result != 'ok') {
+        throw new Error('Request failed with errors: ' + jsonData.errors.map(x => `[${x.title}]: ${x.detail}`))
+    }
+
+    return jsonData
+}
+
+export const accountSettings = async (stateManager: SourceStateManager, requestManager: RequestManager): Promise<FormRow> => {
+    const accessToken = await getAccessToken(stateManager)
+    if (!accessToken) {
+        return createNavigationButton({
+            id: 'login_button',
+            label: 'Login',
+            value: undefined,
+            form: createForm({
+                onSubmit: async (values) => {
+                    if(!values.username) {
+                        throw new Error('Username must not be empty')
+                    }
+
+                    if(!values.password) {
+                        throw new Error('Password must not be empty')
+                    }
+
+                    let response = await authEndpointRequest(requestManager, 'login', {
+                        username: values.username,
+                        password: values.password
+                    })
+
+                    await saveAccessToken(stateManager, response.token.session, response.token.refresh) 
+                },
+                validate: async (form) => true,
+                sections: async () => [
+                    createSection({
+                        id: 'username_section',
+                        header: 'Username',
+                        footer: 'Enter your MangaDex account username',
+                        rows: async () => [
+                            createInputField({
+                                id: 'username',
+                                placeholder: 'Username',
+                                value: '',
+                                maskInput: false
+                            })
+                        ]
+                    }),
+
+                    createSection({
+                        id: 'password_section',
+                        header: 'Password',
+                        footer: 'Enter the password associated with your MangaDex account Username',
+                        rows: async () => [
+                            createInputField({
+                                id: 'password',
+                                placeholder: 'Password',
+                                value: '',
+                                maskInput: true
+                            })
+                        ]
+                    })
+                ]
+            })
+        })
+    }
+
+    return createNavigationButton({
+        id: 'account_settings',
+        value: undefined,
+        label: 'Session Info',
+        form: createForm({
+            onSubmit: async () => { },
+            validate: async (form) => true,
+            sections: async () => {
+                const accessToken = await getAccessToken(stateManager)
+                if (!accessToken) {
+                    return [
+                        createSection({
+                            id: 'not_logged_in_section',
+                            rows: async () => [
+                                createLabel({
+                                    id: 'not_logged_in',
+                                    label: 'Not Logged In',
+                                    value: undefined
+                                })
+                            ]
+                        })
+                    ]
+                }
+
+                return [
+                    createSection({
+                        id: 'introspect',
+                        rows: async () => {
+                            return Object.keys(accessToken.tokenBody).map(key => {
+                                const value = accessToken.tokenBody[key]
+
+                                return createMultilineLabel({
+                                    id: key,
+                                    label: key,
+                                    value: Array.isArray(value) ? value.join('\n') : `${value}`
+                                })
+                            })
+                        }
+                    }),
+                    createSection({
+                        id: 'refresh_button_section',
+                        rows: async () => [
+                            createButton({
+                                id: 'refresh_token_button',
+                                label: 'Refresh Token',
+                                value: undefined,
+                                onTap: async () => {
+                                    const response = await authEndpointRequest(requestManager, 'refresh', {
+                                        token: accessToken.refreshToken
+                                    })
+
+                                    await saveAccessToken(stateManager, response.token.session, response.token.refresh) 
+                                }
+                            }),
+
+                            createButton({
+                                id: 'logout_button',
+                                label: 'Logout',
+                                value: undefined,
+                                onTap: async () => {
+                                    await authEndpointRequest(requestManager, 'logout', {})
+                                    await saveAccessToken(stateManager, undefined, undefined) 
+                                }
+                            })
+                        ]
+                    })
+                ]
+            }
+        })
+    })
 }
 
 export const thumbnailSettings = (stateManager: SourceStateManager): NavigationButton => {
@@ -269,7 +471,7 @@ export const homepageSettings = (stateManager: SourceStateManager): NavigationBu
                                         id: 'enabled_recommendations',
                                         label: 'Enable recommendations',
                                         value: values[0] ?? false
-                                    }),   
+                                    }),
                                     createStepper({
                                         id: 'amount_of_recommendations',
                                         label: 'Amount of recommendation',
