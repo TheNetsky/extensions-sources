@@ -396,7 +396,7 @@ const NHENTAI_URL = "https://nhentai.net";
 const API = NHENTAI_URL + "/api";
 const method = 'GET';
 exports.NHentaiInfo = {
-    version: "3.0.0",
+    version: "3.0.1",
     name: "nhentai",
     description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
     author: `NotMarek`,
@@ -489,10 +489,18 @@ class NHentai extends paperback_extensions_common_1.Source {
         });
     }
     searchRequest(query, metadata) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
             let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             let title = (_b = query.title) !== null && _b !== void 0 ? _b : "";
+            if ((_c = metadata === null || metadata === void 0 ? void 0 : metadata.stopSearch) !== null && _c !== void 0 ? _c : false) {
+                return createPagedResults({
+                    results: [],
+                    metadata: {
+                        stopSearch: true
+                    }
+                });
+            }
             if (title.length <= 6 && /^\d+$/.test(title)) {
                 const request = createRequestObject({
                     url: `${API}/gallery/${title}`,
@@ -503,13 +511,14 @@ class NHentai extends paperback_extensions_common_1.Source {
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch({ result: [json_data], num_pages: 1, per_page: 1 }),
                     metadata: {
-                        page: page + 1
+                        page: page + 1,
+                        stopSearch: true
                     }
                 });
             }
             else {
                 const q = title + " " + (yield language(this.stateManager)) + (yield extraArgs(this.stateManager));
-                const [sort, query] = (_c = yield sortOrder(q, this.stateManager)) !== null && _c !== void 0 ? _c : ["", q];
+                const [sort, query] = (_d = yield sortOrder(q, this.stateManager)) !== null && _d !== void 0 ? _d : ["", q];
                 const request = createRequestObject({
                     url: `${API}/galleries/search?query=${encodeURIComponent(query !== null && query !== void 0 ? query : "")}&sort=${sort}&page=${page}`,
                     method
