@@ -23,7 +23,7 @@ const API = NHENTAI_URL + "/api"
 const method = 'GET'
 
 export const NHentaiInfo: SourceInfo = {
-  version: "3.0.0",
+  version: "3.0.1",
   name: "nhentai",
   description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
   author: `NotMarek`,
@@ -116,6 +116,14 @@ export class NHentai extends Source {
   async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
     let title: string = query.title ?? "";
+    if (metadata?.stopSearch ?? false){
+      return createPagedResults({
+        results: [],
+        metadata: {
+          stopSearch: true
+        }
+      })
+    }
     if (title.length <= 6 && /^\d+$/.test(title)) {
       const request = createRequestObject({
         url: `${API}/gallery/${title}`,
@@ -126,7 +134,8 @@ export class NHentai extends Source {
       return createPagedResults({
         results: parseSearch({ result: [json_data],  num_pages: 1, per_page: 1}),
         metadata: {
-          page: page + 1
+          page: page + 1,
+          stopSearch: true
         }
       })
     } else {
