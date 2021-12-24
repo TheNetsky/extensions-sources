@@ -2704,7 +2704,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.5',
+    version: '2.1.6',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -2802,16 +2802,6 @@ class MangaDex extends paperback_extensions_common_1.Source {
     }
     async supportsTagExclusion() {
         return true;
-    }
-    async getMDHNodeURL(chapterId) {
-        const request = createRequestObject({
-            url: `${this.MANGADEX_API}/at-home/server/${chapterId}`,
-            method: 'GET',
-        });
-        const response = await this.requestManager.schedule(request, 1);
-        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-        console.log(`Using MD@H node: ${json.baseUrl}`);
-        return json.baseUrl;
     }
     async getCustomListRequestURL(listId, ratings) {
         const request = createRequestObject({
@@ -2986,15 +2976,15 @@ class MangaDex extends paperback_extensions_common_1.Source {
             console.log('OLD ID: PLEASE MIGRATE');
             throw new Error('OLD ID: PLEASE REFRESH AND CLEAR ORPHANED CHAPTERS');
         }
-        const serverUrl = await this.getMDHNodeURL(chapterId);
         const dataSaver = await (0, MangaDexSettings_1.getDataSaver)(this.stateManager);
         const request = createRequestObject({
-            url: `${this.MANGADEX_API}/chapter/${chapterId}`,
+            url: `${this.MANGADEX_API}/at-home/server/${chapterId}`,
             method: 'GET',
         });
         const response = await this.requestManager.schedule(request, 1);
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data;
-        const chapterDetails = json.data.attributes;
+        const serverUrl = json.baseUrl;
+        const chapterDetails = json.chapter;
         let pages;
         if (dataSaver) {
             pages = chapterDetails.dataSaver.map((x) => `${serverUrl}/data-saver/${chapterDetails.hash}/${x}`);
