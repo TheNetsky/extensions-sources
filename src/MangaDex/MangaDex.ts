@@ -73,7 +73,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.5',
+    version: '2.1.6',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -185,19 +185,7 @@ export class MangaDex extends Source {
         return true
     }
 
-    async getMDHNodeURL(chapterId: string): Promise<string> {
-        const request = createRequestObject({
-            url: `${this.MANGADEX_API}/at-home/server/${chapterId}`,
-            method: 'GET',
-        })
     
-        const response = await this.requestManager.schedule(request, 1)
-        const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
-
-        console.log(`Using MD@H node: ${json.baseUrl}`)
-
-        return json.baseUrl
-    }
 
     async getCustomListRequestURL(listId: string, ratings: string[]): Promise<string> {
         const request = createRequestObject({
@@ -398,18 +386,19 @@ export class MangaDex extends Source {
             throw new Error('OLD ID: PLEASE REFRESH AND CLEAR ORPHANED CHAPTERS')
         }
 
-        const serverUrl = await this.getMDHNodeURL(chapterId)
+        
         const dataSaver = await getDataSaver(this.stateManager)
 
         const request = createRequestObject({
-            url: `${this.MANGADEX_API}/chapter/${chapterId}`,
+            url: `${this.MANGADEX_API}/at-home/server/${chapterId}`,
             method: 'GET',
         })
 
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        const chapterDetails = json.data.attributes
+        const serverUrl = json.baseUrl
+        const chapterDetails = json.chapter
 
         let pages: string[]
         if (dataSaver) {
