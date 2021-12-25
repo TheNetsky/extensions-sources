@@ -2903,8 +2903,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./Chapter"), exports);
-__exportStar(require("./ChapterDetails"), exports);
 __exportStar(require("./HomeSection"), exports);
+__exportStar(require("./DynamicUI"), exports);
+__exportStar(require("./ChapterDetails"), exports);
 __exportStar(require("./Manga"), exports);
 __exportStar(require("./MangaTile"), exports);
 __exportStar(require("./RequestObject"), exports);
@@ -2921,7 +2922,6 @@ __exportStar(require("./RequestHeaders"), exports);
 __exportStar(require("./SourceInfo"), exports);
 __exportStar(require("./SourceStateManager"), exports);
 __exportStar(require("./RequestInterceptor"), exports);
-__exportStar(require("./DynamicUI"), exports);
 __exportStar(require("./TrackedManga"), exports);
 __exportStar(require("./SourceManga"), exports);
 __exportStar(require("./TrackedMangaChapterReadAction"), exports);
@@ -2955,7 +2955,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.6',
+    version: '2.1.7',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -2987,7 +2987,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                         ...request.headers,
                         referer: `${this.MANGADEX_DOMAIN}/`
                     };
-                    var accessToken = await (0, MangaDexSettings_1.getAccessToken)(this.stateManager);
+                    let accessToken = await (0, MangaDexSettings_1.getAccessToken)(this.stateManager);
                     if (request.url.includes('auth/') || !accessToken)
                         return request;
                     // Padding 60 secs to make sure it wont expire in-transit if the connection is really bad
@@ -3353,10 +3353,14 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     if (json.data === undefined)
                         throw new Error(`Failed to parse json results for section ${section.section.title}`);
                     switch (section.section.id) {
-                        case 'latest_updates':
-                            const coversMapping = await this.getCoversMapping(json.data.map((x) => x.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0]), ratings);
+                        case 'latest_updates': {
+                            const coversMapping = await this.getCoversMapping(json.data.map((x) => {
+                                return x.relationships.filter((x) => x.type == 'manga')
+                                    .map((x) => x.id)[0];
+                            }), ratings);
                             section.section.items = await (0, MangaDexParser_1.parseChapterList)(json.data, coversMapping, this, MangaDexSettings_1.getHomepageThumbnail, ratings);
                             break;
+                        }
                         default:
                             section.section.items = await (0, MangaDexParser_1.parseMangaList)(json.data, this, MangaDexSettings_1.getHomepageThumbnail);
                     }
@@ -3410,7 +3414,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                             }
                             results.push(createMangaTile({
                                 id: recommendedId,
-                                title: createIconText({ text: this.decodeHTMLEntity(similarJson.title.en) ?? "No Title" }),
+                                title: createIconText({ text: this.decodeHTMLEntity(similarJson.title.en) ?? 'No Title' }),
                                 image
                             }));
                             // We then add similar titles, ordered by decreasing similarity
@@ -3427,7 +3431,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                                     }
                                     results.push(createMangaTile({
                                         id: manga.id,
-                                        title: createIconText({ text: this.decodeHTMLEntity(manga.title.en) ?? "No Title" }),
+                                        title: createIconText({ text: this.decodeHTMLEntity(manga.title.en) ?? 'No Title' }),
                                         subtitleText: createIconText({ text: `Similarity ${manga.score.toFixed(2)}` }),
                                         image
                                     }));
@@ -3484,10 +3488,11 @@ class MangaDex extends paperback_extensions_common_1.Source {
         if (json.data === undefined)
             throw new Error('Failed to parse json results for getViewMoreItems');
         switch (homepageSectionId) {
-            case 'latest_updates':
+            case 'latest_updates': {
                 const coversMapping = await this.getCoversMapping(json.data.map((x) => x.relationships.filter((x) => x.type == 'manga').map((x) => x.id)[0]), ratings);
                 results = await (0, MangaDexParser_1.parseChapterList)(json.data, coversMapping, this, MangaDexSettings_1.getHomepageThumbnail, ratings);
                 break;
+            }
             default:
                 results = await (0, MangaDexParser_1.parseMangaList)(json.data, this, MangaDexSettings_1.getHomepageThumbnail);
         }
