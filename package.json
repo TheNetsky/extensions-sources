@@ -33,8 +33,9 @@
     "typescript": "^4.3.2"
   },
   "dependencies": {
-    "paperback-cli": "^2.0.0-alpha.9",
-    "paperback-extensions-common": "^5.0.0-alpha.4",
+    "entities": "^3.0.1",
+    "paperback-cli": "^2.0.0-alpha.11",
+    "paperback-extensions-common": "^5.0.0-alpha.5",
     "ts-node": "^10.2.1"
   }
 }

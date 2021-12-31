@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-/* eslint-disable no-case-declarations */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import {
     PagedResults,
     Source,
@@ -16,7 +14,6 @@ import {
     MangaStatus,
     MangaTile,
     Tag,
-    RequestHeaders,
     ContentRating,
     TagSection,
     Section,
@@ -73,7 +70,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.6',
+    version: '2.1.7',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -106,7 +103,7 @@ export class MangaDex extends Source {
                     referer: `${this.MANGADEX_DOMAIN}/`
                 }
 
-                var accessToken = await getAccessToken(this.stateManager)
+                let accessToken = await getAccessToken(this.stateManager)
 
                 if(request.url.includes('auth/') || !accessToken) return request
 
@@ -254,11 +251,11 @@ export class MangaDex extends Source {
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         const mangaDetails = json.data.attributes
-        const titles = [
+        const titles = <string[]> [
             ...Object.values(mangaDetails.title),
             ...mangaDetails.altTitles.flatMap((x: never) => Object.values(x))
-        ].map((x: string) => this.decodeHTMLEntity(x))
-        const desc = this.decodeHTMLEntity(mangaDetails.description.en).replace(/\[\/{0,1}[bus]\]/g, '')  // Get rid of BBcode tags
+        ].map((x: string) => this.decodeHTMLEntity(x)).filter(x => x)
+        const desc = this.decodeHTMLEntity(mangaDetails.description.en)?.replace(/\[\/{0,1}[bus]\]/g, '')  // Get rid of BBcode tags
 
         let status = MangaStatus.COMPLETED
         if (mangaDetails.status == 'ongoing') {
@@ -537,10 +534,17 @@ export class MangaDex extends Source {
                         if(json.data === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
 
                         switch(section.section.id) {
-                            case 'latest_updates':
-                                const coversMapping = await this.getCoversMapping(json.data.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
+                            case 'latest_updates': {
+                                const coversMapping = await this.getCoversMapping(
+                                    json.data.map((x: any) => {
+                                        return x.relationships.filter((x: any) => x.type == 'manga')
+                                            .map((x: any) => x.id)[0]
+                                    }),
+                                    ratings
+                                )
                                 section.section.items = await parseChapterList(json.data, coversMapping, this, getHomepageThumbnail, ratings)
                                 break
+                            }
                             default:
                                 section.section.items = await parseMangaList(json.data, this, getHomepageThumbnail)
                         }
@@ -599,7 +603,7 @@ export class MangaDex extends Source {
                                 }
                                 results.push(createMangaTile({
                                     id: recommendedId,
-                                    title: createIconText({text: this.decodeHTMLEntity(similarJson.title.en)}),
+                                    title: createIconText({text: this.decodeHTMLEntity(similarJson.title.en) ?? 'No Title'}),
                                     image
                                 }))
 
@@ -617,7 +621,7 @@ export class MangaDex extends Source {
 
                                         results.push(createMangaTile({
                                             id: manga.id,
-                                            title: createIconText({text: this.decodeHTMLEntity(manga.title.en)}),
+                                            title: createIconText({text: this.decodeHTMLEntity(manga.title.en) ?? 'No Title'}),
                                             subtitleText: createIconText({text: `Similarity ${manga.score.toFixed(2)}`}),
                                             image
                                         }))
@@ -682,10 +686,11 @@ export class MangaDex extends Source {
         if(json.data === undefined) throw new Error('Failed to parse json results for getViewMoreItems')
 
         switch(homepageSectionId) {
-            case 'latest_updates':
+            case 'latest_updates': {
                 const coversMapping = await this.getCoversMapping(json.data.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
                 results = await parseChapterList(json.data, coversMapping, this, getHomepageThumbnail, ratings)
                 break
+            }
             default:
                 results = await parseMangaList(json.data, this, getHomepageThumbnail)
         }
@@ -756,7 +761,8 @@ export class MangaDex extends Source {
         mangaUpdatesFoundCallback(createMangaUpdates({ids: []}))
     }
 
-    decodeHTMLEntity(str: string): string {
+    decodeHTMLEntity(str: string | undefined): string | undefined {
+        if(str == undefined) return undefined
         return entities.decodeHTML(str)
     }
 }

@@ -1,6 +1,7 @@
 temp_build
 bundles
 lib
+tmp
 
 #compiled sources
 reference

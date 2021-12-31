@@ -177,7 +177,7 @@ export const authEndpointRequest = async (requestManager: RequestManager, endpoi
 
     const jsonData = typeof(response.data) === 'string' ? JSON.parse(response.data) : response.data
     if (jsonData.result != 'ok') {
-        throw new Error('Request failed with errors: ' + jsonData.errors.map(x => `[${x.title}]: ${x.detail}`))
+        throw new Error('Request failed with errors: ' + jsonData.errors.map((x: any) => `[${x.title}]: ${x.detail}`))
     }
 
     return jsonData
