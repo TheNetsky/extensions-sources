@@ -70,7 +70,7 @@ export const MangaDexInfo: SourceInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.7',
+    version: '2.1.8',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: ContentRating.EVERYONE,
@@ -349,9 +349,10 @@ export class MangaDex extends Source {
                 const langCode: any = MDLanguages.getPBCode(chapterDetails.translatedLanguage)
                 const time = new Date(chapterDetails.publishAt)
                 const group = chapter.relationships.filter((x: any) => x.type == 'scanlation_group').map((x: any) => x.attributes.name).join(', ')
+                const pages = Number(chapterDetails.pages)
 
                 const identifier = `${volume}-${chapNum}-${chapterDetails.translatedLanguage}`
-                if (!collectedChapters.includes(identifier) || !skipSameChapter) {
+                if ((!collectedChapters.includes(identifier) || !skipSameChapter) && pages > 0) {
                     chapters.push(createChapter({
                         id: chapterId,
                         mangaId: mangaId,
