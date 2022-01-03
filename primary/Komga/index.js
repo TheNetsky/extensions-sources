@@ -2503,8 +2503,8 @@ class Komga extends paperback_extensions_common_1.Source {
     }
     async getTags() {
         // This function is called on the homepage and should not throw if the server is unavailable
-        // We define two types of tags: 
-        // - `genre` 
+        // We define two types of tags:
+        // - `genre`
         // - `tag`
         // To be able to make the difference between theses types, we append `genre-` or `tag-` at the beginning of the tag id
         // TODO: we could add: collections
@@ -2740,7 +2740,7 @@ class Komga extends paperback_extensions_common_1.Source {
     }
     async filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
         const komgaAPI = await this.getKomgaAPI();
-        // We make requests of PAGE_SIZE titles to `series/updated/` until we got every titles 
+        // We make requests of PAGE_SIZE titles to `series/updated/` until we got every titles
         // or we got a title which `lastModified` metadata is older than `time`
         let page = 0;
         const foundIds = [];
@@ -3002,7 +3002,7 @@ const testServerSettingsMenu = (stateManager, requestManager) => {
         value: '',
         label: 'Try settings',
         form: createForm({
-            onSubmit: (values) => {
+            onSubmit: () => {
                 return Promise.resolve();
             },
             validate: () => {

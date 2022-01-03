@@ -3044,6 +3044,9 @@ class MangaDex extends paperback_extensions_common_1.Source {
                 });
             }
             const tagObject = createTag({ id: tag.data.id, label: tag.data.attributes.name.en });
+            // Since we already know that a section for the group has to exist, eslint is complaining
+            // for no reason at all.
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             sections[group].tags = [...sections[group]?.tags ?? [], tagObject];
         }
         return Object.values(sections);
@@ -3113,7 +3116,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
             ...Object.values(mangaDetails.title),
             ...mangaDetails.altTitles.flatMap((x) => Object.values(x))
         ].map((x) => this.decodeHTMLEntity(x)).filter(x => x);
-        const desc = this.decodeHTMLEntity(mangaDetails.description.en)?.replace(/\[\/{0,1}[bus]\]/g, ''); // Get rid of BBcode tags
+        const desc = this.decodeHTMLEntity(mangaDetails.description.en)?.replace(/\[\/?[bus]]/g, ''); // Get rid of BBcode tags
         let status = paperback_extensions_common_1.MangaStatus.COMPLETED;
         if (mangaDetails.status == 'ongoing') {
             status = paperback_extensions_common_1.MangaStatus.ONGOING;
@@ -3259,6 +3262,8 @@ class MangaDex extends paperback_extensions_common_1.Source {
         const searchType = query.title?.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i) ? 'ids[]' : 'title';
         const url = new MangaDexHelper_1.URLBuilder(this.MANGADEX_API)
             .addPathComponent('manga')
+            // Since we already know that a title must exist, we can ignore this.
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             .addQueryParameter(searchType, (query.title?.length ?? 0) > 0 ? encodeURIComponent(query.title) : undefined)
             .addQueryParameter('limit', 100)
             .addQueryParameter('offset', offset)
@@ -3379,7 +3384,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                 });
                 promises.push(this.requestManager.schedule(similarRequest, 1).then(async (similarResponse) => {
                     // We should only process if the response is valid
-                    // We won't throw an error but silently pass as an error can occurre with 
+                    // We won't throw an error but silently pass as an error can occurre with
                     // titles unsupported by SimilarManga (new titles for example)
                     if (similarResponse.status !== 200) {
                         console.log(`Could not fetch similar titles for id: ${recommendedId}, request failed with status ${similarResponse.status}`);
@@ -3387,7 +3392,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
                     else {
                         const similarJson = (typeof similarResponse.data) === 'string' ? JSON.parse(similarResponse.data) : similarResponse.data;
                         // We should only process if the result is valid
-                        // We won't throw an error but silently pass as an error can occurre with 
+                        // We won't throw an error but silently pass as an error can occurre with
                         // titles unsupported by SimilarManga (new titles for example)
                         if (similarJson.id === undefined) {
                             console.log('Could not fetch similar titles for id: ' + recommendedId + ', json is invalid');
@@ -4133,12 +4138,11 @@ const saveAccessToken = async (stateManager, accessToken, refreshToken) => {
     ]);
     if (!accessToken)
         return undefined;
-    const obj = {
+    return {
         accessToken,
         refreshToken,
         tokenBody: await (0, exports.parseAccessToken)(accessToken)
     };
-    return obj;
 };
 exports.saveAccessToken = saveAccessToken;
 const parseAccessToken = async (accessToken) => {
@@ -4156,7 +4160,7 @@ const authEndpointRequest = async (requestManager, endpoint, payload) => {
         method: 'POST',
         url: 'https://api.mangadex.org/auth/' + endpoint,
         headers: {
-            "content-type": 'application/json'
+            'content-type': 'application/json'
         },
         data: payload
     }), 1);
@@ -4185,13 +4189,13 @@ const accountSettings = async (stateManager, requestManager) => {
                     if (!values.password) {
                         throw new Error('Password must not be empty');
                     }
-                    let response = await (0, exports.authEndpointRequest)(requestManager, 'login', {
+                    const response = await (0, exports.authEndpointRequest)(requestManager, 'login', {
                         username: values.username,
                         password: values.password
                     });
                     await (0, exports.saveAccessToken)(stateManager, response.token.session, response.token.refresh);
                 },
-                validate: async (form) => true,
+                validate: async () => true,
                 sections: async () => [
                     createSection({
                         id: 'username_section',
@@ -4228,8 +4232,8 @@ const accountSettings = async (stateManager, requestManager) => {
         value: undefined,
         label: 'Session Info',
         form: createForm({
-            onSubmit: async () => { },
-            validate: async (form) => true,
+            onSubmit: async () => undefined,
+            validate: async () => true,
             sections: async () => {
                 const accessToken = await (0, exports.getAccessToken)(stateManager);
                 if (!accessToken) {
@@ -4400,7 +4404,7 @@ const homepageSettings = (stateManager) => {
             onSubmit: (values) => {
                 return Promise.all([
                     stateManager.store('enabled_homepage_sections', values.enabled_homepage_sections),
-                    // The `as boolean` seems required to prevent Paperback from throwing 
+                    // The `as boolean` seems required to prevent Paperback from throwing
                     // `Invalid type for key value; expected `Bool` got `Optional<JSValue>``
                     stateManager.store('enabled_recommendations', values.enabled_recommendations),
                     stateManager.store('amount_of_recommendations', values.amount_of_recommendations),
@@ -4474,7 +4478,7 @@ const homepageSettings = (stateManager) => {
                                     //    value: '',
                                     //    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                                     //    label: values[2]!.toString(),
-                                    //}),   
+                                    //}),
                                 ];
                             });
                         }
