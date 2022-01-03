@@ -57,8 +57,8 @@ export const testServerSettings = async(stateManager: SourceStateManager, reques
         // If the server is unavailable error.message will be 'AsyncOperationTimedOutError'
         return `Failed: Could not connect to server - ${error.message}`
     }
-        
-    switch(responseStatus) { 
+
+    switch(responseStatus) {
         case 200: {
             return 'Successful connection!'
         }
@@ -150,7 +150,7 @@ export const testServerSettingsMenu = (stateManager: SourceStateManager, request
         value: '',
         label: 'Try settings',
         form: createForm({
-            onSubmit: (values: any) => {
+            onSubmit: () => {
                 return Promise.resolve()
             },
             validate: () => {

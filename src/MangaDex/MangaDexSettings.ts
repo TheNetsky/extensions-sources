@@ -142,13 +142,11 @@ export const saveAccessToken = async (stateManager: SourceStateManager, accessTo
 
     if(!accessToken) return undefined
 
-    const obj = {
+    return {
         accessToken,
         refreshToken,
         tokenBody: await parseAccessToken(accessToken)
     }
-
-    return obj
 }
 
 export const parseAccessToken = async (accessToken: string | undefined): Promise<any | undefined> => {
@@ -161,12 +159,12 @@ export const parseAccessToken = async (accessToken: string | undefined): Promise
     return JSON.parse(tokenBodyJSON)
 }
 
-export const authEndpointRequest = async (requestManager: RequestManager, endpoint: "login" | "refresh" | "logout", payload: any): Promise<any | undefined> => {
+export const authEndpointRequest = async (requestManager: RequestManager, endpoint: 'login' | 'refresh' | 'logout', payload: any): Promise<any | undefined> => {
     const response = await requestManager.schedule(createRequestObject({
         method: 'POST',
         url: 'https://api.mangadex.org/auth/' + endpoint,
         headers: {
-            "content-type": 'application/json'
+            'content-type': 'application/json'
         },
         data: payload
     }), 1)
@@ -200,14 +198,14 @@ export const accountSettings = async (stateManager: SourceStateManager, requestM
                         throw new Error('Password must not be empty')
                     }
 
-                    let response = await authEndpointRequest(requestManager, 'login', {
+                    const response = await authEndpointRequest(requestManager, 'login', {
                         username: values.username,
                         password: values.password
                     })
 
-                    await saveAccessToken(stateManager, response.token.session, response.token.refresh) 
+                    await saveAccessToken(stateManager, response.token.session, response.token.refresh)
                 },
-                validate: async (form) => true,
+                validate: async () => true,
                 sections: async () => [
                     createSection({
                         id: 'username_section',
@@ -246,8 +244,8 @@ export const accountSettings = async (stateManager: SourceStateManager, requestM
         value: undefined,
         label: 'Session Info',
         form: createForm({
-            onSubmit: async () => { },
-            validate: async (form) => true,
+            onSubmit: async () => undefined,
+            validate: async () => true,
             sections: async () => {
                 const accessToken = await getAccessToken(stateManager)
                 if (!accessToken) {
@@ -292,7 +290,7 @@ export const accountSettings = async (stateManager: SourceStateManager, requestM
                                         token: accessToken.refreshToken
                                     })
 
-                                    await saveAccessToken(stateManager, response.token.session, response.token.refresh) 
+                                    await saveAccessToken(stateManager, response.token.session, response.token.refresh)
                                 }
                             }),
 
@@ -302,7 +300,7 @@ export const accountSettings = async (stateManager: SourceStateManager, requestM
                                 value: undefined,
                                 onTap: async () => {
                                     await authEndpointRequest(requestManager, 'logout', {})
-                                    await saveAccessToken(stateManager, undefined, undefined) 
+                                    await saveAccessToken(stateManager, undefined, undefined)
                                 }
                             })
                         ]
@@ -422,7 +420,7 @@ export const homepageSettings = (stateManager: SourceStateManager): NavigationBu
             onSubmit: (values: any) => {
                 return Promise.all([
                     stateManager.store('enabled_homepage_sections', values.enabled_homepage_sections),
-                    // The `as boolean` seems required to prevent Paperback from throwing 
+                    // The `as boolean` seems required to prevent Paperback from throwing
                     // `Invalid type for key value; expected `Bool` got `Optional<JSValue>``
                     stateManager.store('enabled_recommendations', values.enabled_recommendations as boolean),
                     stateManager.store('amount_of_recommendations', values.amount_of_recommendations),
@@ -496,7 +494,7 @@ export const homepageSettings = (stateManager: SourceStateManager): NavigationBu
                                     //    value: '',
                                     //    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                                     //    label: values[2]!.toString(),
-                                    //}),   
+                                    //}),
                                 ]
                             })
                         }

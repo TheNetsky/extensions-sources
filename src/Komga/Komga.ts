@@ -69,7 +69,7 @@ const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/we
 // Number of items requested for paged requests
 const PAGE_SIZE = 40
 
-export const parseMangaStatus = (komgaStatus: string) => {
+export const parseMangaStatus = (komgaStatus: string): MangaStatus => {
     switch (komgaStatus) {
         case 'ENDED':
             return MangaStatus.COMPLETED
@@ -79,20 +79,20 @@ export const parseMangaStatus = (komgaStatus: string) => {
             return MangaStatus.ONGOING
         case 'HIATUS':
             return MangaStatus.ONGOING
-    } 
+    }
     return MangaStatus.ONGOING
 }
 
-export const capitalize = (tag: string) => {
+export const capitalize = (tag: string): string => {
     return tag.replace(/^\w/, (c) => c.toUpperCase())
 }
 
 export class KomgaRequestInterceptor implements RequestInterceptor {
     /*
-    Requests made to Komga must use a Basic Authentication. 
+    Requests made to Komga must use a Basic Authentication.
     This interceptor adds an authorization header to the requests.
 
-    NOTE: The authorization header can be overridden by the request 
+    NOTE: The authorization header can be overridden by the request
     */
 
     stateManager: SourceStateManager
@@ -177,8 +177,8 @@ export class Komga extends Source {
     override async getTags(): Promise<TagSection[]> {
         // This function is called on the homepage and should not throw if the server is unavailable
 
-        // We define two types of tags: 
-        // - `genre` 
+        // We define two types of tags:
+        // - `genre`
         // - `tag`
         // To be able to make the difference between theses types, we append `genre-` or `tag-` at the beginning of the tag id
 
@@ -213,14 +213,14 @@ export class Komga extends Source {
         const genresResult = (typeof genresResponse.data) === 'string' ? JSON.parse(genresResponse.data) : genresResponse.data
         const tagsResult = (typeof tagsResponse.data) === 'string' ? JSON.parse(tagsResponse.data) : tagsResponse.data
 
-        const tagSections: TagSection[] = [
+        const tagSections: [TagSection, TagSection] = [
             createTagSection({ id: '0', label: 'genres', tags: [] }),
             createTagSection({ id: '1', label: 'tags', tags: [] })
         ]
 
         // For each tag, we append a type identifier to its id and capitalize its label
-        tagSections[0]!.tags = genresResult.map((elem: string) => createTag({ id: 'genre-' + elem, label: capitalize(elem) }))
-        tagSections[1]!.tags = tagsResult.map((elem: string) => createTag({ id: 'tag-' + elem, label: capitalize(elem) }))
+        tagSections[0].tags = genresResult.map((elem: string) => createTag({ id: 'genre-' + elem, label: capitalize(elem) }))
+        tagSections[1].tags = tagsResult.map((elem: string) => createTag({ id: 'tag-' + elem, label: capitalize(elem) }))
 
         return tagSections
     }
@@ -242,13 +242,13 @@ export class Komga extends Source {
         const metadata = result.metadata
         const booksMetadata = result.booksMetadata
 
-        const tagSections: TagSection[] = [
+        const tagSections: [TagSection, TagSection] = [
             createTagSection({ id: '0', label: 'genres', tags: [] }),
             createTagSection({ id: '1', label: 'tags', tags: [] })
         ]
         // For each tag, we append a type identifier to its id and capitalize its label
-        tagSections[0]!.tags = metadata.genres.map((elem: string) => createTag({ id: 'genre-' + elem, label: capitalize(elem) }))
-        tagSections[1]!.tags = metadata.tags.map((elem: string) => createTag({ id: 'tag-' + elem, label: capitalize(elem) }))
+        tagSections[0].tags = metadata.genres.map((elem: string) => createTag({ id: 'genre-' + elem, label: capitalize(elem) }))
+        tagSections[1].tags = metadata.tags.map((elem: string) => createTag({ id: 'tag-' + elem, label: capitalize(elem) }))
 
         const authors: string[] = []
         const artists: string[] = []
@@ -370,7 +370,7 @@ export class Komga extends Source {
 
     override async getSearchResults(searchQuery: SearchRequest, metadata: any): Promise<PagedResults> {
         // This function is also called when the user search in an other source. It should not throw if the server is unavailable.
-        
+
         return KomgaCommon.searchRequest(searchQuery, metadata, this.requestManager, this.stateManager, PAGE_SIZE)
     }
 
@@ -478,7 +478,7 @@ export class Komga extends Source {
 
         const komgaAPI = await this.getKomgaAPI()
 
-        // We make requests of PAGE_SIZE titles to `series/updated/` until we got every titles 
+        // We make requests of PAGE_SIZE titles to `series/updated/` until we got every titles
         // or we got a title which `lastModified` metadata is older than `time`
         let page = 0
         const foundIds: string[] = []

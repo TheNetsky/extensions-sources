@@ -99,7 +99,7 @@ export class MangaDex extends Source {
             interceptRequest: async (request) => {
                 // Impossible to have undefined headers, ensured by the app
                 request.headers = {
-                    ...request.headers!,
+                    ...request.headers,
                     referer: `${this.MANGADEX_DOMAIN}/`
                 }
 
@@ -108,14 +108,14 @@ export class MangaDex extends Source {
                 if(request.url.includes('auth/') || !accessToken) return request
 
                 // Padding 60 secs to make sure it wont expire in-transit if the connection is really bad
-                if(Number(accessToken.tokenBody.exp) <= (Date.now()/1000) - 60) 
+                if(Number(accessToken.tokenBody.exp) <= (Date.now()/1000) - 60)
                 {
                     try {
                         const response = await authEndpointRequest(this.requestManager, 'refresh', {
                             token: accessToken.refreshToken
                         })
 
-                        accessToken = await saveAccessToken(this.stateManager, response.token.session, response.token.refresh) 
+                        accessToken = await saveAccessToken(this.stateManager, response.token.session, response.token.refresh)
                         if (!accessToken) return request
                     } catch {
                         return request
@@ -124,7 +124,7 @@ export class MangaDex extends Source {
 
                 // Impossible to have undefined headers, ensured by the app
                 request.headers = {
-                    ...request.headers!,
+                    ...request.headers,
                     authorization: 'Bearer ' + accessToken.accessToken
                 }
 
@@ -168,6 +168,9 @@ export class MangaDex extends Source {
                 })
             }
             const tagObject = createTag({id: tag.data.id, label: tag.data.attributes.name.en})
+            // Since we already know that a section for the group has to exist, eslint is complaining
+            // for no reason at all.
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             sections[group]!.tags = [...sections[group]?.tags ?? [], tagObject]
         }
 
@@ -182,14 +185,14 @@ export class MangaDex extends Source {
         return true
     }
 
-    
+
 
     async getCustomListRequestURL(listId: string, ratings: string[]): Promise<string> {
         const request = createRequestObject({
             url: `${this.MANGADEX_API}/list/${listId}`,
             method: 'GET',
         })
-    
+
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
@@ -246,7 +249,7 @@ export class MangaDex extends Source {
                 .buildUrl(),
             method: 'GET',
         })
-    
+
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
@@ -255,7 +258,7 @@ export class MangaDex extends Source {
             ...Object.values(mangaDetails.title),
             ...mangaDetails.altTitles.flatMap((x: never) => Object.values(x))
         ].map((x: string) => this.decodeHTMLEntity(x)).filter(x => x)
-        const desc = this.decodeHTMLEntity(mangaDetails.description.en)?.replace(/\[\/{0,1}[bus]\]/g, '')  // Get rid of BBcode tags
+        const desc = this.decodeHTMLEntity(mangaDetails.description.en)?.replace(/\[\/?[bus]]/g, '')  // Get rid of BBcode tags
 
         let status = MangaStatus.COMPLETED
         if (mangaDetails.status == 'ongoing') {
@@ -269,7 +272,7 @@ export class MangaDex extends Source {
                 label: Object.keys(tagName).map(keys => tagName[keys])[0] ?? 'Unknown'
             }))
         }
-    
+
         const author = json.data.relationships.filter((x: any) => x.type == 'author').map((x: any) => x.attributes.name).join(', ')
         const artist = json.data.relationships.filter((x: any) => x.type == 'artist').map((x: any) => x.attributes.name).join(', ')
 
@@ -383,7 +386,7 @@ export class MangaDex extends Source {
             throw new Error('OLD ID: PLEASE REFRESH AND CLEAR ORPHANED CHAPTERS')
         }
 
-        
+
         const dataSaver = await getDataSaver(this.stateManager)
 
         const request = createRequestObject({
@@ -427,6 +430,8 @@ export class MangaDex extends Source {
 
         const url = new URLBuilder(this.MANGADEX_API)
             .addPathComponent('manga')
+            // Since we already know that a title must exist, we can ignore this.
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             .addQueryParameter(searchType, (query.title?.length ?? 0) > 0 ? encodeURIComponent(query.title!) : undefined)
             .addQueryParameter('limit', 100)
             .addQueryParameter('offset', offset)
@@ -568,15 +573,15 @@ export class MangaDex extends Source {
                     this.requestManager.schedule(similarRequest, 1).then(async similarResponse => {
 
                         // We should only process if the response is valid
-                        // We won't throw an error but silently pass as an error can occurre with 
+                        // We won't throw an error but silently pass as an error can occurre with
                         // titles unsupported by SimilarManga (new titles for example)
                         if (similarResponse.status !== 200) {
                             console.log(`Could not fetch similar titles for id: ${recommendedId}, request failed with status ${similarResponse.status}`)
                         } else {
                             const similarJson = (typeof similarResponse.data) === 'string' ? JSON.parse(similarResponse.data) : similarResponse.data
-                            
+
                             // We should only process if the result is valid
-                            // We won't throw an error but silently pass as an error can occurre with 
+                            // We won't throw an error but silently pass as an error can occurre with
                             // titles unsupported by SimilarManga (new titles for example)
                             if (similarJson.id === undefined) {
                                 console.log('Could not fetch similar titles for id: ' + recommendedId + ', json is invalid')
@@ -593,7 +598,7 @@ export class MangaDex extends Source {
 
                                 // Generate the MangaTiles list, sorted by decreasing similarity
                                 const results = []
-                                
+
                                 // We first add the title used for the recommendation
                                 let image: string
                                 if (similarJson.coverFileName === 'unknown') {
