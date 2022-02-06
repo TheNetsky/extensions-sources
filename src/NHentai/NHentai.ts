@@ -23,7 +23,7 @@ const API = NHENTAI_URL + "/api"
 const method = 'GET'
 
 export const NHentaiInfo: SourceInfo = {
-  version: "3.0.1",
+  version: "3.0.2",
   name: "nhentai",
   description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
   author: `NotMarek`,
@@ -62,7 +62,7 @@ const extraArgs = async (stateManager: SourceStateManager): Promise<string> => {
 export class NHentai extends Source {
   readonly requestManager: RequestManager = createRequestManager({
     requestsPerSecond: 3,
-    requestTimeout: 3000,
+    requestTimeout: 15000, // Nhentai sometimes slows down during peak hours
   });
 
   stateManager = createSourceStateManager({})
