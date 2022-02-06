@@ -396,7 +396,7 @@ const NHENTAI_URL = "https://nhentai.net";
 const API = NHENTAI_URL + "/api";
 const method = 'GET';
 exports.NHentaiInfo = {
-    version: "3.0.1",
+    version: "3.0.2",
     name: "nhentai",
     description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
     author: `NotMarek`,
@@ -436,7 +436,7 @@ class NHentai extends paperback_extensions_common_1.Source {
         super(...arguments);
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
-            requestTimeout: 3000,
+            requestTimeout: 15000, // Nhentai sometimes slows down during peak hours
         });
         this.stateManager = createSourceStateManager({});
     }
