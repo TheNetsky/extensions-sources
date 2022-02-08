@@ -396,7 +396,7 @@ const NHENTAI_URL = "https://nhentai.net";
 const API = NHENTAI_URL + "/api";
 const method = 'GET';
 exports.NHentaiInfo = {
-    version: "3.0.2",
+    version: "3.0.3",
     name: "nhentai",
     description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
     author: `NotMarek`,
