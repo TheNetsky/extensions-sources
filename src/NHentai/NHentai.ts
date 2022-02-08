@@ -124,7 +124,7 @@ export class NHentai extends Source {
         }
       })
     }
-    if (title.length <= 6 && /^\d+$/.test(title)) {
+    if (/^\d+$/.test(title)) {
       const request = createRequestObject({
         url: `${API}/gallery/${title}`,
         method
