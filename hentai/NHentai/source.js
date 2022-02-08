@@ -501,7 +501,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                     }
                 });
             }
-            if (title.length <= 6 && /^\d+$/.test(title)) {
+            if (/^\d+$/.test(title)) {
                 const request = createRequestObject({
                     url: `${API}/gallery/${title}`,
                     method
