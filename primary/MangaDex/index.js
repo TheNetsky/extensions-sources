@@ -3303,7 +3303,7 @@ class MangaDex extends paperback_extensions_common_1.Source {
         const sections = [
             {
                 request: createRequestObject({
-                    url: await this.getCustomListRequestURL('d434f5f1-ff90-4fa5-be7c-2c070da79120', ratings),
+                    url: await this.getCustomListRequestURL('ff210dec-862b-4c17-8608-0e7f97c70488', ratings),
                     method: 'GET',
                 }),
                 section: createHomeSection({
