@@ -8,6 +8,7 @@ import {
   PagedResults,
   SourceInfo,
   TagType,
+  Request,
   RequestManager,
   ContentRating,
   Section,
@@ -23,14 +24,14 @@ const API = NHENTAI_URL + "/api"
 const method = 'GET'
 
 export const NHentaiInfo: SourceInfo = {
-  version: "3.0.3",
+  version: "3.1.0",
   name: "nhentai",
   description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
   author: `NotMarek`,
   authorWebsite: `https://github.com/notmarek`,
   icon: `icon.png`,
   contentRating: ContentRating.ADULT,
-  sourceTags: [{ text: "18+", type: TagType.YELLOW }],
+  sourceTags: [{ text: "18+", type: TagType.YELLOW }, { text: "Cloudflare", type: TagType.RED }],
   websiteBaseURL: NHENTAI_URL,
 }
 
@@ -62,15 +63,14 @@ const extraArgs = async (stateManager: SourceStateManager): Promise<string> => {
 export class NHentai extends Source {
   readonly requestManager: RequestManager = createRequestManager({
     requestsPerSecond: 3,
-    requestTimeout: 15000, // Nhentai sometimes slows down during peak hours
+    requestTimeout: 15000,
   });
 
   stateManager = createSourceStateManager({})
-  
-  getMangaShareUrl(mangaId: string): string {
+
+  override getMangaShareUrl(mangaId: string): string {
     return `${NHENTAI_URL}/g/${mangaId}`
   }
-
 
   override async getSourceMenu(): Promise<Section> {
     return Promise.resolve(createSection({
@@ -113,7 +113,7 @@ export class NHentai extends Source {
 
   }
 
-  async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
+  override async getSearchResults(query: SearchRequest, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
     let title: string = query.title ?? "";
     if (metadata?.stopSearch ?? false){
@@ -130,7 +130,12 @@ export class NHentai extends Source {
         method
       })
       const data = await this.requestManager.schedule(request, 1)
-      let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+      let json_data
+      try {
+        json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+      } catch {
+        throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+      }
       return createPagedResults({
         results: parseSearch({ result: [json_data],  num_pages: 1, per_page: 1}),
         metadata: {
@@ -146,7 +151,12 @@ export class NHentai extends Source {
         method
       })
       const data = await this.requestManager.schedule(request, 1)
-      let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+      let json_data
+      try {
+        json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+      } catch {
+        throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+      }
       return createPagedResults({
         results: parseSearch(json_data),
         metadata: {
@@ -171,8 +181,12 @@ export class NHentai extends Source {
         method
       })
       const data = await this.requestManager.schedule(request, 1);
-      let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
-      section.items = parseSearch(json_data);
+      try {
+        let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+        section.items = parseSearch(json_data);
+      } catch {
+        throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+      }
       sectionCallback(section);
     }
   }
@@ -184,13 +198,24 @@ export class NHentai extends Source {
       method
     })
     const data = await this.requestManager.schedule(request, 1)
-    let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+    let json_data
+    try {
+      json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+    } catch {
+      throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+    }
     page++;
     return createPagedResults({
       results: parseSearch(json_data),
       metadata: {
         page: page
       }
+    })
+  }
+  override getCloudflareBypassRequest(): Request {
+    return createRequestObject({
+      url: NHENTAI_URL,
+      method: "GET"
     })
   }
 }
