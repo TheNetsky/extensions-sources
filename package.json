@@ -1,6 +1,6 @@
 {
   "name": "extensions-official",
-  "repositoryName": "NSFW-Extensions (Netsky Fork)",
+  "repositoryName": "Extensions NSFW (Netsky Fork)",
   "version": "1.0.0",
   "description": "Community maintained Paperback extension repository",
   "main": "index.js",
