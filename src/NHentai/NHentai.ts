@@ -24,7 +24,7 @@ const API = NHENTAI_URL + "/api"
 const method = 'GET'
 
 export const NHentaiInfo: SourceInfo = {
-  version: "3.1.0",
+  version: "3.1.1",
   name: "nhentai",
   description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
   author: `NotMarek`,
@@ -134,7 +134,7 @@ export class NHentai extends Source {
       try {
         json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
       } catch {
-        throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+        throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass")
       }
       return createPagedResults({
         results: parseSearch({ result: [json_data],  num_pages: 1, per_page: 1}),
@@ -155,7 +155,7 @@ export class NHentai extends Source {
       try {
         json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
       } catch {
-        throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+        throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass")
       }
       return createPagedResults({
         results: parseSearch(json_data),
@@ -185,7 +185,7 @@ export class NHentai extends Source {
         let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
         section.items = parseSearch(json_data);
       } catch {
-        throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+        throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass")
       }
       sectionCallback(section);
     }
@@ -202,7 +202,7 @@ export class NHentai extends Source {
     try {
       json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
     } catch {
-      throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.")
+      throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass")
     }
     page++;
     return createPagedResults({
