@@ -396,7 +396,7 @@ const NHENTAI_URL = "https://nhentai.net";
 const API = NHENTAI_URL + "/api";
 const method = 'GET';
 exports.NHentaiInfo = {
-    version: "3.1.0",
+    version: "3.1.1",
     name: "nhentai",
     description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
     author: `NotMarek`,
@@ -512,7 +512,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                     json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                 }
                 catch (_e) {
-                    throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.");
+                    throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
                 }
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch({ result: [json_data], num_pages: 1, per_page: 1 }),
@@ -535,7 +535,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                     json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                 }
                 catch (_f) {
-                    throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.");
+                    throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
                 }
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch(json_data),
@@ -565,7 +565,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                     section.items = NHentaiParser_1.parseSearch(json_data);
                 }
                 catch (_a) {
-                    throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.");
+                    throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
                 }
                 sectionCallback(section);
             }
@@ -585,7 +585,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                 json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             }
             catch (_b) {
-                throw new Error("Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.");
+                throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
             }
             page++;
             return createPagedResults({
