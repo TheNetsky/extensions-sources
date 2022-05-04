@@ -395,7 +395,7 @@ const NHentaiSettings_1 = require("./NHentaiSettings");
 const NHENTAI_URL = 'https://nhentai.net';
 const API = NHENTAI_URL + '/api';
 exports.NHentaiInfo = {
-    version: '3.2.0',
+    version: '3.2.1',
     name: 'nhentai',
     icon: 'icon.png',
     author: 'NotMarek',
@@ -480,6 +480,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                 method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(data.status);
             const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             return NHentaiParser_1.parseGallery(json_data);
         });
@@ -491,6 +492,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                 method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(data.status);
             const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             return [NHentaiParser_1.parseGalleryIntoChapter(json_data, mangaId)];
         });
@@ -502,6 +504,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                 method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
+            this.CloudFlareError(data.status);
             const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             return NHentaiParser_1.parseChapterDetails(json_data, mangaId);
         });
@@ -525,13 +528,8 @@ class NHentai extends paperback_extensions_common_1.Source {
                     method: 'GET'
                 });
                 const data = yield this.requestManager.schedule(request, 1);
-                let json_data;
-                try {
-                    json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-                }
-                catch (_e) {
-                    throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
-                }
+                this.CloudFlareError(data.status);
+                const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch({ result: [json_data], num_pages: 1, per_page: 1 }),
                     metadata: {
@@ -548,13 +546,8 @@ class NHentai extends paperback_extensions_common_1.Source {
                     method: 'GET'
                 });
                 const data = yield this.requestManager.schedule(request, 1);
-                let json_data;
-                try {
-                    json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-                }
-                catch (_f) {
-                    throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
-                }
+                this.CloudFlareError(data.status);
+                const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch(json_data),
                     metadata: {
@@ -578,13 +571,9 @@ class NHentai extends paperback_extensions_common_1.Source {
                     method: 'GET'
                 });
                 const data = yield this.requestManager.schedule(request, 1);
-                try {
-                    const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-                    section.items = NHentaiParser_1.parseSearch(json_data);
-                }
-                catch (_a) {
-                    throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
-                }
+                this.CloudFlareError(data.status);
+                const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+                section.items = NHentaiParser_1.parseSearch(json_data);
                 sectionCallback(section);
             }
         });
@@ -598,13 +587,8 @@ class NHentai extends paperback_extensions_common_1.Source {
                 method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
-            let json_data;
-            try {
-                json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-            }
-            catch (_b) {
-                throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
-            }
+            this.CloudFlareError(data.status);
+            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             page++;
             return createPagedResults({
                 results: NHentaiParser_1.parseSearch(json_data),
@@ -619,6 +603,11 @@ class NHentai extends paperback_extensions_common_1.Source {
             url: NHENTAI_URL,
             method: 'GET'
         });
+    }
+    CloudFlareError(status) {
+        if (status == 503) {
+            throw new Error('CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > <The name of this source> and press Cloudflare Bypass');
+        }
     }
 }
 exports.NHentai = NHentai;
