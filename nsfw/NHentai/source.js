@@ -392,25 +392,33 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 const NHentaiHelper_1 = require("./NHentaiHelper");
 const NHentaiParser_1 = require("./NHentaiParser");
 const NHentaiSettings_1 = require("./NHentaiSettings");
-const NHENTAI_URL = "https://nhentai.net";
-const API = NHENTAI_URL + "/api";
-const method = 'GET';
+const NHENTAI_URL = 'https://nhentai.net';
+const API = NHENTAI_URL + '/api';
 exports.NHentaiInfo = {
-    version: "3.1.1",
-    name: "nhentai",
-    description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
-    author: `NotMarek`,
-    authorWebsite: `https://github.com/notmarek`,
-    icon: `icon.png`,
+    version: '3.2.0',
+    name: 'nhentai',
+    icon: 'icon.png',
+    author: 'NotMarek',
+    authorWebsite: 'https://github.com/notmarek',
+    description: 'Extension which pulls 18+ content from nHentai.',
     contentRating: paperback_extensions_common_1.ContentRating.ADULT,
-    sourceTags: [{ text: "18+", type: paperback_extensions_common_1.TagType.YELLOW }, { text: "Cloudflare", type: paperback_extensions_common_1.TagType.RED }],
     websiteBaseURL: NHENTAI_URL,
+    sourceTags: [
+        {
+            text: '18+',
+            type: paperback_extensions_common_1.TagType.YELLOW
+        },
+        {
+            text: 'Cloudflare',
+            type: paperback_extensions_common_1.TagType.RED
+        }
+    ]
 };
 const language = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    let lang = (_a = (yield stateManager.retrieve('languages'))) !== null && _a !== void 0 ? _a : "";
+    const lang = (_a = (yield stateManager.retrieve('languages'))) !== null && _a !== void 0 ? _a : '';
     if (lang.length === 0) {
-        return "\"\"";
+        return '""';
     }
     else {
         return `language:${lang}`;
@@ -418,17 +426,17 @@ const language = (stateManager) => __awaiter(void 0, void 0, void 0, function* (
 });
 const sortOrder = (query, stateManager) => __awaiter(void 0, void 0, void 0, function* () {
     var _b, _c, _d, _e;
-    let inQuery = NHentaiHelper_1.NHSortOrders.containsShortcut(query);
+    const inQuery = NHentaiHelper_1.NHSortOrders.containsShortcut(query);
     if (((_b = inQuery[0]) === null || _b === void 0 ? void 0 : _b.length) !== 0) {
-        return [(_c = inQuery[0]) !== null && _c !== void 0 ? _c : "", query.replace((_d = inQuery[1]) !== null && _d !== void 0 ? _d : "", "")];
+        return [(_c = inQuery[0]) !== null && _c !== void 0 ? _c : '', query.replace((_d = inQuery[1]) !== null && _d !== void 0 ? _d : '', '')];
     }
     else {
-        let sortOrder = (_e = (yield stateManager.retrieve('sort_order'))) !== null && _e !== void 0 ? _e : NHentaiHelper_1.NHSortOrders.getDefault();
+        const sortOrder = (_e = (yield stateManager.retrieve('sort_order'))) !== null && _e !== void 0 ? _e : NHentaiHelper_1.NHSortOrders.getDefault();
         return [sortOrder, query];
     }
 });
 const extraArgs = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    let args = yield NHentaiSettings_1.getExtraArgs(stateManager);
+    const args = yield NHentaiSettings_1.getExtraArgs(stateManager);
     return ` ${args}`;
 });
 class NHentai extends paperback_extensions_common_1.Source {
@@ -437,11 +445,18 @@ class NHentai extends paperback_extensions_common_1.Source {
         this.requestManager = createRequestManager({
             requestsPerSecond: 3,
             requestTimeout: 15000,
+            interceptor: {
+                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
+                    var _a;
+                    request.headers = Object.assign(Object.assign({}, ((_a = request.headers) !== null && _a !== void 0 ? _a : {})), Object.assign(Object.assign({}, ({ 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1' })), { 'referer': `${NHENTAI_URL}/` }));
+                    return request;
+                }),
+                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () {
+                    return response;
+                })
+            }
         });
         this.stateManager = createSourceStateManager({});
-    }
-    getMangaShareUrl(mangaId) {
-        return `${NHENTAI_URL}/g/${mangaId}`;
     }
     getSourceMenu() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -455,14 +470,17 @@ class NHentai extends paperback_extensions_common_1.Source {
             }));
         });
     }
+    getMangaShareUrl(mangaId) {
+        return `${NHENTAI_URL}/g/${mangaId}`;
+    }
     getMangaDetails(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${API}/gallery/${mangaId}`,
-                method,
+                method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
-            let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             return NHentaiParser_1.parseGallery(json_data);
         });
     }
@@ -470,10 +488,10 @@ class NHentai extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${API}/gallery/${mangaId}`,
-                method,
+                method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
-            let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             return [NHentaiParser_1.parseGalleryIntoChapter(json_data, mangaId)];
         });
     }
@@ -481,18 +499,18 @@ class NHentai extends paperback_extensions_common_1.Source {
         return __awaiter(this, void 0, void 0, function* () {
             const request = createRequestObject({
                 url: `${API}/gallery/${mangaId}`,
-                method
+                method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
-            let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             return NHentaiParser_1.parseChapterDetails(json_data, mangaId);
         });
     }
     getSearchResults(query, metadata) {
         var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function* () {
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            let title = (_b = query.title) !== null && _b !== void 0 ? _b : "";
+            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
+            const title = (_b = query.title) !== null && _b !== void 0 ? _b : '';
             if ((_c = metadata === null || metadata === void 0 ? void 0 : metadata.stopSearch) !== null && _c !== void 0 ? _c : false) {
                 return createPagedResults({
                     results: [],
@@ -504,7 +522,7 @@ class NHentai extends paperback_extensions_common_1.Source {
             if (/^\d+$/.test(title)) {
                 const request = createRequestObject({
                     url: `${API}/gallery/${title}`,
-                    method
+                    method: 'GET'
                 });
                 const data = yield this.requestManager.schedule(request, 1);
                 let json_data;
@@ -512,7 +530,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                     json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                 }
                 catch (_e) {
-                    throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
+                    throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
                 }
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch({ result: [json_data], num_pages: 1, per_page: 1 }),
@@ -523,11 +541,11 @@ class NHentai extends paperback_extensions_common_1.Source {
                 });
             }
             else {
-                const q = title + " " + (yield language(this.stateManager)) + (yield extraArgs(this.stateManager));
-                const [sort, query] = (_d = yield sortOrder(q, this.stateManager)) !== null && _d !== void 0 ? _d : ["", q];
+                const q = title + ' ' + (yield language(this.stateManager)) + (yield extraArgs(this.stateManager));
+                const [sort, query] = (_d = yield sortOrder(q, this.stateManager)) !== null && _d !== void 0 ? _d : ['', q];
                 const request = createRequestObject({
-                    url: `${API}/galleries/search?query=${encodeURIComponent(query !== null && query !== void 0 ? query : "")}&sort=${sort}&page=${page}`,
-                    method
+                    url: `${API}/galleries/search?query=${encodeURIComponent(query !== null && query !== void 0 ? query : '')}&sort=${sort}&page=${page}`,
+                    method: 'GET'
                 });
                 const data = yield this.requestManager.schedule(request, 1);
                 let json_data;
@@ -535,7 +553,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                     json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                 }
                 catch (_f) {
-                    throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
+                    throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
                 }
                 return createPagedResults({
                     results: NHentaiParser_1.parseSearch(json_data),
@@ -555,17 +573,17 @@ class NHentai extends paperback_extensions_common_1.Source {
             const sections = [section1, section2, section3, section4];
             for (const section of sections) {
                 sectionCallback(section);
-                let request = createRequestObject({
+                const request = createRequestObject({
                     url: `${API}/galleries/search?query=${encodeURIComponent((yield language(this.stateManager)) + (yield extraArgs(this.stateManager)))}&sort=${section.id}`,
-                    method
+                    method: 'GET'
                 });
                 const data = yield this.requestManager.schedule(request, 1);
                 try {
-                    let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+                    const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
                     section.items = NHentaiParser_1.parseSearch(json_data);
                 }
                 catch (_a) {
-                    throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
+                    throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
                 }
                 sectionCallback(section);
             }
@@ -577,7 +595,7 @@ class NHentai extends paperback_extensions_common_1.Source {
             let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
             const request = createRequestObject({
                 url: `${API}/galleries/search?query=${encodeURIComponent((yield language(this.stateManager)) + (yield extraArgs(this.stateManager)))}&sort=${homepageSectionId}&page=${page}`,
-                method
+                method: 'GET'
             });
             const data = yield this.requestManager.schedule(request, 1);
             let json_data;
@@ -585,7 +603,7 @@ class NHentai extends paperback_extensions_common_1.Source {
                 json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
             }
             catch (_b) {
-                throw new Error("CLOUDFLARE BYPASS ERROR:\nPlease go to Settings > Sources > \<\The name of this source\> and press Cloudflare Bypass");
+                throw new Error('Source requires cloudflare bypass. If you have already done this and still get errors, create a support thread in the discord.');
             }
             page++;
             return createPagedResults({
@@ -599,7 +617,7 @@ class NHentai extends paperback_extensions_common_1.Source {
     getCloudflareBypassRequest() {
         return createRequestObject({
             url: NHENTAI_URL,
-            method: "GET"
+            method: 'GET'
         });
     }
 }
@@ -615,8 +633,8 @@ class NHLanguagesClass {
         this.Languages = [
             // Include all langauages
             {
-                name: "Include All",
-                NHCode: "",
+                name: 'Include All',
+                NHCode: '',
                 PBCode: paperback_extensions_common_1.LanguageCode.UNKNOWN,
                 default: true
             },
@@ -663,28 +681,28 @@ class NHSortOrderClass {
         this.SortOrders = [
             {
                 // Sort by popular
-                name: "Popular all-time",
-                NHCode: "popular",
-                shortcuts: ["s:p", "s:popular", "sort:p", "sort:popular"],
+                name: 'Popular all-time',
+                NHCode: 'popular',
+                shortcuts: ['s:p', 's:popular', 'sort:p', 'sort:popular'],
                 default: true
             },
             {
                 // Sort by popular this week
                 name: 'Popular this week',
                 NHCode: 'popular-week',
-                shortcuts: ["s:pw", "s:w", "s:popular-week", "sort:pw", "sort:w", "sort:popular-week"],
+                shortcuts: ['s:pw', 's:w', 's:popular-week', 'sort:pw', 'sort:w', 'sort:popular-week'],
             },
             {
                 // Sort by popular today
                 name: 'Popular today',
                 NHCode: 'popular-today',
-                shortcuts: ["s:pt", "s:t", "s:popular-today", "sort:pt", "sort:t", "sort:popular-today"],
+                shortcuts: ['s:pt', 's:t', 's:popular-today', 'sort:pt', 'sort:t', 'sort:popular-today'],
             },
             {
                 // Sort by recent
                 name: 'Recent',
                 NHCode: 'date',
-                shortcuts: ["s:r", "s:recent", "sort:r", "sort:recent"],
+                shortcuts: ['s:r', 's:recent', 'sort:r', 'sort:recent'],
             },
         ];
         // Sorts the sort orders based on name
@@ -698,7 +716,7 @@ class NHSortOrderClass {
                 }
             }
         }
-        return ["", ""];
+        return ['', ''];
     }
     getNHCodeList() {
         return this.SortOrders.map(SortOrder => SortOrder.NHCode);
@@ -719,36 +737,36 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseGalleryIntoChapter = exports.parseSearch = exports.parseChapterDetails = exports.parseGallery = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 const NHentaiHelper_1 = require("./NHentaiHelper");
-const typeMap = { "j": "jpg", "p": "png", "g": "gif" };
+const typeMap = { 'j': 'jpg', 'p': 'png', 'g': 'gif' };
 const typeOfImage = (image) => {
     var _a;
-    return (_a = typeMap[image.t]) !== null && _a !== void 0 ? _a : "";
+    return (_a = typeMap[image.t]) !== null && _a !== void 0 ? _a : '';
 };
 const getArtist = (gallery) => {
-    let tags = gallery.tags;
+    const tags = gallery.tags;
     for (const tag of tags) {
-        if (tag.type === "artist") {
+        if (tag.type === 'artist') {
             return tag.name;
         }
     }
-    return "";
+    return '';
 };
 const getLanguage = (gallery) => {
-    let tags = gallery.tags;
+    const tags = gallery.tags;
     for (const tag of tags) {
-        if (tag.type === "language" && tag.name !== "translated") {
+        if (tag.type === 'language' && tag.name !== 'translated') {
             return tag.name;
         }
     }
-    return "";
+    return '';
 };
 const parseGallery = (data) => {
-    let tags = [];
+    const tags = [];
     for (const tag of data.tags) {
-        if (tag.type === "tag")
+        if (tag.type === 'tag')
             tags.push(createTag({ id: tag.id.toString(), label: tag.name }));
     }
-    let artist = getArtist(data);
+    const artist = getArtist(data);
     return createManga({
         id: data.id.toString(),
         titles: [data.title.english, data.title.japanese, data.title.pretty],
@@ -758,7 +776,7 @@ const parseGallery = (data) => {
         rating: 0,
         status: paperback_extensions_common_1.MangaStatus.COMPLETED,
         follows: data.num_favorites,
-        tags: [createTagSection({ id: "tags", label: "Tags", tags: tags })],
+        tags: [createTagSection({ id: 'tags', label: 'Tags', tags: tags })],
         hentai: true,
     });
 };
@@ -769,7 +787,7 @@ const parseChapterDetails = (data, mangaId) => {
         mangaId: mangaId,
         longStrip: false,
         pages: data.images.pages.map((image, i) => {
-            let type = typeOfImage(image);
+            const type = typeOfImage(image);
             return `https://i.nhentai.net/galleries/${data.media_id}/${i + 1}.${type}`;
         }),
     });
@@ -777,7 +795,7 @@ const parseChapterDetails = (data, mangaId) => {
 exports.parseChapterDetails = parseChapterDetails;
 const parseSearch = (data) => {
     const tiles = [];
-    for (let gallery of data.result) {
+    for (const gallery of data.result) {
         tiles.push(createMangaTile({
             id: gallery.id.toString(),
             image: `https://t.nhentai.net/galleries/${gallery.media_id}/cover.${typeOfImage(gallery.images.cover)}`,
@@ -825,7 +843,7 @@ const getLanguages = (stateManager) => __awaiter(void 0, void 0, void 0, functio
 exports.getLanguages = getLanguages;
 const getExtraArgs = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
     var _b;
-    return (_b = (yield stateManager.retrieve('extra_args'))) !== null && _b !== void 0 ? _b : "";
+    return (_b = (yield stateManager.retrieve('extra_args'))) !== null && _b !== void 0 ? _b : '';
 });
 exports.getExtraArgs = getExtraArgs;
 const getSortOrders = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
@@ -880,7 +898,7 @@ const settings = (stateManager) => {
                                     createInputField({
                                         id: 'extra_args',
                                         label: 'Additional arguments',
-                                        placeholder: "woman -lolicon -shotacon -yaoi",
+                                        placeholder: 'woman -lolicon -shotacon -yaoi',
                                         maskInput: false,
                                         value: values[2],
                                     })
