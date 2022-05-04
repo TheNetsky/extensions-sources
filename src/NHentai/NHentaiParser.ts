@@ -5,43 +5,48 @@ import {
     MangaTile,
     Tag,
     Chapter,
-} from "paperback-extensions-common"
-import { NHLanguages } from "./NHentaiHelper";
-import { Gallery, ImagePageObject, QueryResponse, TagObject } from "./NHentaiInterfaces";
+} from 'paperback-extensions-common'
 
-const typeMap: { [key: string]: string } = { "j": "jpg", "p": "png", "g": "gif" };
+import { NHLanguages } from './NHentaiHelper'
+
+import { Gallery,
+    ImagePageObject,
+    QueryResponse,
+    TagObject } from './NHentaiInterfaces'
+
+const typeMap: { [key: string]: string } = { 'j': 'jpg', 'p': 'png', 'g': 'gif' }
 
 const typeOfImage = (image: ImagePageObject): string => {
-    return typeMap[image.t] ?? "";
+    return typeMap[image.t] ?? ''
 }
 
 const getArtist = (gallery: Gallery): string => {
-    let tags: TagObject[] = gallery.tags;
+    const tags: TagObject[] = gallery.tags
     for (const tag of tags) {
-        if (tag.type === "artist") {
-            return tag.name;
+        if (tag.type === 'artist') {
+            return tag.name
         }
     }
-    return "";
+    return ''
 }
 
 const getLanguage = (gallery: Gallery): string => {
-    let tags: TagObject[] = gallery.tags;
+    const tags: TagObject[] = gallery.tags
     for (const tag of tags) {
-        if (tag.type === "language" && tag.name !== "translated") {
-            return tag.name;
+        if (tag.type === 'language' && tag.name !== 'translated') {
+            return tag.name
         }
     }
-    return "";
+    return ''
 }
 
 export const parseGallery = (data: Gallery): Manga => {
-    let tags: Tag[] = [];
+    const tags: Tag[] = []
     for (const tag of data.tags) {
-        if (tag.type === "tag")
-            tags.push(createTag({ id: tag.id.toString(), label: tag.name }));
+        if (tag.type === 'tag')
+            tags.push(createTag({ id: tag.id.toString(), label: tag.name }))
     }
-    let artist = getArtist(data);
+    const artist = getArtist(data)
     return createManga({
         id: data.id.toString(),
         titles: [data.title.english, data.title.japanese, data.title.pretty],
@@ -51,7 +56,7 @@ export const parseGallery = (data: Gallery): Manga => {
         rating: 0,
         status: MangaStatus.COMPLETED,
         follows: data.num_favorites,
-        tags: [createTagSection({ id: "tags", label: "Tags", tags: tags })],
+        tags: [createTagSection({ id: 'tags', label: 'Tags', tags: tags })],
         hentai: true,
     })
 }
@@ -62,15 +67,15 @@ export const parseChapterDetails = (data: Gallery, mangaId: string): ChapterDeta
         mangaId: mangaId,
         longStrip: false,
         pages: data.images.pages.map((image, i) => {
-            let type = typeOfImage(image);
-            return `https://i.nhentai.net/galleries/${data.media_id}/${i+1}.${type}`;
+            const type = typeOfImage(image)
+            return `https://i.nhentai.net/galleries/${data.media_id}/${i+1}.${type}`
         }),
     })
 }
 
 export const parseSearch = (data: QueryResponse): MangaTile[] => {
-    const tiles: MangaTile[] = [];
-    for (let gallery of data.result) {
+    const tiles: MangaTile[] = []
+    for (const gallery of data.result) {
         tiles.push(createMangaTile({
             id: gallery.id.toString(),
             image: `https://t.nhentai.net/galleries/${gallery.media_id}/cover.${typeOfImage(gallery.images.cover)}`,
@@ -82,7 +87,7 @@ export const parseSearch = (data: QueryResponse): MangaTile[] => {
             })
         }))
     }
-    return tiles;
+    return tiles
 }
 
 export const parseGalleryIntoChapter = (data: Gallery, mangaId: string): Chapter => {

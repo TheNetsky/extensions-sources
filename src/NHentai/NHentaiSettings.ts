@@ -4,8 +4,10 @@ import {
     NavigationButton,
     SourceStateManager,
 } from 'paperback-extensions-common'
+
 import {
-    NHLanguages, NHSortOrders,
+    NHLanguages,
+    NHSortOrders,
 } from './NHentaiHelper'
 
 export const getLanguages = async (stateManager: SourceStateManager): Promise<string[]> => {
@@ -13,7 +15,7 @@ export const getLanguages = async (stateManager: SourceStateManager): Promise<st
 }
 
 export const getExtraArgs = async (stateManager: SourceStateManager): Promise<string> => {
-    return (await stateManager.retrieve('extra_args') as string) ?? ""
+    return (await stateManager.retrieve('extra_args') as string) ?? ''
 }
 
 export const getSortOrders = async (stateManager: SourceStateManager): Promise<string[]> => {
@@ -45,32 +47,32 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                                 getSortOrders(stateManager),
                                 getExtraArgs(stateManager),
                             ]).then(async values => [
-                                    createSelect({
-                                        id: 'languages',
-                                        label: 'Languages',
-                                        options: NHLanguages.getNHCodeList(),
-                                        displayLabel: option => NHLanguages.getName(option),
-                                        value: values[0],
-                                        allowsMultiselect: false,
-                                        minimumOptionCount: 1,
-                                    }),
-                                    createSelect({
-                                        id: 'sort_order',
-                                        label: 'Default search sort',
-                                        options: NHSortOrders.getNHCodeList(),
-                                        displayLabel: option => NHSortOrders.getName(option),
-                                        value: values[1],
-                                        allowsMultiselect: false,
-                                        minimumOptionCount: 1,
-                                    }),
-                                    createInputField({
-                                        id: 'extra_args',
-                                        label: 'Additional arguments',
-                                        placeholder: "woman -lolicon -shotacon -yaoi",
-                                        maskInput: false,
-                                        value: values[2],
-                                    })
-                                ])
+                                createSelect({
+                                    id: 'languages',
+                                    label: 'Languages',
+                                    options: NHLanguages.getNHCodeList(),
+                                    displayLabel: option => NHLanguages.getName(option),
+                                    value: values[0],
+                                    allowsMultiselect: false,
+                                    minimumOptionCount: 1,
+                                }),
+                                createSelect({
+                                    id: 'sort_order',
+                                    label: 'Default search sort',
+                                    options: NHSortOrders.getNHCodeList(),
+                                    displayLabel: option => NHSortOrders.getName(option),
+                                    value: values[1],
+                                    allowsMultiselect: false,
+                                    minimumOptionCount: 1,
+                                }),
+                                createInputField({
+                                    id: 'extra_args',
+                                    label: 'Additional arguments',
+                                    placeholder: 'woman -lolicon -shotacon -yaoi',
+                                    maskInput: false,
+                                    value: values[2],
+                                })
+                            ])
                         }
                     })
                 ])

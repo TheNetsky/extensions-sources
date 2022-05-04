@@ -1,4 +1,4 @@
-import { LanguageCode } from "paperback-extensions-common"
+import { LanguageCode } from 'paperback-extensions-common'
 
 interface Language {
     name: string,
@@ -11,8 +11,8 @@ class NHLanguagesClass {
     Languages: Language[] = [
         // Include all langauages
         {
-            name: "Include All",
-            NHCode: "",
+            name: 'Include All',
+            NHCode: '',
             PBCode: LanguageCode.UNKNOWN,
             default: true
         },
@@ -73,28 +73,28 @@ class NHSortOrderClass {
     SortOrders: SortOrder[] = [
         {
             // Sort by popular
-            name: "Popular all-time",
-            NHCode: "popular",
-            shortcuts: ["s:p", "s:popular", "sort:p", "sort:popular"],
+            name: 'Popular all-time',
+            NHCode: 'popular',
+            shortcuts: ['s:p', 's:popular', 'sort:p', 'sort:popular'],
             default: true
         },
         {
             // Sort by popular this week
             name: 'Popular this week',
             NHCode: 'popular-week',
-            shortcuts: ["s:pw", "s:w", "s:popular-week", "sort:pw", "sort:w", "sort:popular-week"],
+            shortcuts: ['s:pw', 's:w', 's:popular-week', 'sort:pw', 'sort:w', 'sort:popular-week'],
         },
         {
             // Sort by popular today
             name: 'Popular today',
             NHCode: 'popular-today',
-            shortcuts: ["s:pt", "s:t", "s:popular-today", "sort:pt", "sort:t", "sort:popular-today"],
+            shortcuts: ['s:pt', 's:t', 's:popular-today', 'sort:pt', 'sort:t', 'sort:popular-today'],
         },
         {
             // Sort by recent
             name: 'Recent',
             NHCode: 'date',
-            shortcuts: ["s:r", "s:recent", "sort:r", "sort:recent"],
+            shortcuts: ['s:r', 's:recent', 'sort:r', 'sort:recent'],
         },
 
 
@@ -109,11 +109,11 @@ class NHSortOrderClass {
         for (const SortOrder of this.SortOrders) {
             for (const shortcut of SortOrder.shortcuts) {
                 if (query.includes(shortcut)) {
-                    return [SortOrder.NHCode, shortcut];
+                    return [SortOrder.NHCode, shortcut]
                 }
             }
         }
-        return ["", ""];
+        return ['', '']
     }
 
     getNHCodeList(): string[] {
