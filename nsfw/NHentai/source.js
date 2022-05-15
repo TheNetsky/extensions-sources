@@ -395,7 +395,7 @@ const NHentaiSettings_1 = require("./NHentaiSettings");
 const NHENTAI_URL = 'https://nhentai.net';
 const API = NHENTAI_URL + '/api';
 exports.NHentaiInfo = {
-    version: '3.2.1',
+    version: '3.2.2',
     name: 'nhentai',
     icon: 'icon.png',
     author: 'NotMarek',
@@ -439,6 +439,7 @@ const extraArgs = (stateManager) => __awaiter(void 0, void 0, void 0, function* 
     const args = yield NHentaiSettings_1.getExtraArgs(stateManager);
     return ` ${args}`;
 });
+const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1';
 class NHentai extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
@@ -448,7 +449,10 @@ class NHentai extends paperback_extensions_common_1.Source {
             interceptor: {
                 interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
                     var _a;
-                    request.headers = Object.assign(Object.assign({}, ((_a = request.headers) !== null && _a !== void 0 ? _a : {})), Object.assign(Object.assign({}, ({ 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1' })), { 'referer': `${NHENTAI_URL}/` }));
+                    request.headers = Object.assign(Object.assign({}, ((_a = request.headers) !== null && _a !== void 0 ? _a : {})), {
+                        'user-agent': userAgent,
+                        'referer': `${NHENTAI_URL}/`
+                    });
                     return request;
                 }),
                 interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () {
@@ -601,7 +605,11 @@ class NHentai extends paperback_extensions_common_1.Source {
     getCloudflareBypassRequest() {
         return createRequestObject({
             url: NHENTAI_URL,
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                'user-agent': userAgent,
+                'referer': `${NHENTAI_URL}.`
+            }
         });
     }
     CloudFlareError(status) {
