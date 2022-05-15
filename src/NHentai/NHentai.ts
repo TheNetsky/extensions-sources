@@ -36,7 +36,7 @@ const NHENTAI_URL = 'https://nhentai.net'
 const API = NHENTAI_URL + '/api'
 
 export const NHentaiInfo: SourceInfo = {
-    version: '3.2.1',
+    version: '3.2.2',
     name: 'nhentai',
     icon: 'icon.png',
     author: 'NotMarek',
@@ -81,7 +81,7 @@ const extraArgs = async (stateManager: SourceStateManager): Promise<string> => {
     return ` ${args}`
 }
 
-
+const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1'
 
 export class NHentai extends Source {
     readonly requestManager: RequestManager = createRequestManager({
@@ -93,7 +93,7 @@ export class NHentai extends Source {
                 request.headers = {
                     ...(request.headers ?? {}),
                     ...{
-                        ...({ 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1' }),
+                        'user-agent': userAgent,
                         'referer': `${NHENTAI_URL}/`
                     }
                 }
@@ -269,7 +269,11 @@ export class NHentai extends Source {
     override getCloudflareBypassRequest(): Request {
         return createRequestObject({
             url: NHENTAI_URL,
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                'user-agent': userAgent,
+                'referer': `${NHENTAI_URL}.`
+            }
         })
     }
 
