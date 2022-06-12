@@ -265,6 +265,13 @@ export class MangaDex extends Source {
             status = MangaStatus.ONGOING
         }
         const tags: Tag[] = []
+        const contentRating: string = mangaDetails.contentRating
+         if(contentRating && contentRating != 'safe') {
+             tags.push(createTag({
+                 id: contentRating,
+                 label: contentRating.charAt(0).toUpperCase() + contentRating.substring(1)
+             }))
+         }
         for (const tag of mangaDetails.tags) {
             const tagName: {[index: string]: string} = tag.attributes.name
             tags.push(createTag({
