@@ -25,6 +25,7 @@ import { Parser } from './WebtoonsParser'
 const WEBTOONS_DOMAIN = 'https://www.webtoons.com/'
 const WEBTOONS_MOBILE_DOMAIN = 'https://m.webtoons.com'
 const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1'
+let langString = 'en' // Only used for 'getMangaShareUrl' function
 
 export const WebtoonsInfo: SourceInfo = {
     version: '2.2.1',
@@ -85,11 +86,13 @@ export class Webtoons extends Source {
         }))
     }
     override getMangaShareUrl(mangaId: string): string {
-        return `${WEBTOONS_DOMAIN}/en/${mangaId}`
+        // langString is 'en' by default.
+        return `${WEBTOONS_DOMAIN}/${langString}/${mangaId}`
     }
 
     override async getMangaDetails(mangaId: string): Promise<Manga> {
         const lang = await getLanguages(this.stateManager)
+        langString = lang[0] ?? 'en' // This variable is only to be used in the "getMangaShareUrl" function.
         const request = createRequestObject({
             url: `${WEBTOONS_MOBILE_DOMAIN}/${lang[0]}/${mangaId}`,
             method: 'GET',
