@@ -31,14 +31,12 @@ class WTLanguagesClass {
             WTCode: 'es',
             PBCode: 'es'
         },
-
         {
             // French
             name: 'Français',
             WTCode: 'fr',
             PBCode: 'fr'
         },
-
         {
             // Indonesian
             name: 'Indonesia',
@@ -51,8 +49,6 @@ class WTLanguagesClass {
             WTCode: 'th',
             PBCode: 'th'
         },
-
-
         {
             // Chinese (Traditional)
             name: '中文 (繁體字)',
@@ -84,6 +80,7 @@ class WTLanguagesClass {
 }
 
 export const WTLanguages = new WTLanguagesClass()
+
 export const getLanguages = async (stateManager: SourceStateManager): Promise<string[]> => {
     return (await stateManager.retrieve('language') as string[]) ?? WTLanguages.getDefault()
 }

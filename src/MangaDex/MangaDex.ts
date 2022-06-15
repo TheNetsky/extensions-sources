@@ -77,10 +77,6 @@ export const MangaDexInfo: SourceInfo = {
     language: LanguageCode.ENGLISH,
     sourceTags: [
         {
-            text: 'Recommended',
-            type: TagType.BLUE,
-        },
-        {
             text: 'Notifications',
             type: TagType.GREEN
         }
@@ -105,11 +101,10 @@ export class MangaDex extends Source {
 
                 let accessToken = await getAccessToken(this.stateManager)
 
-                if(request.url.includes('auth/') || !accessToken) return request
+                if (request.url.includes('auth/') || !accessToken) return request
 
                 // Padding 60 secs to make sure it wont expire in-transit if the connection is really bad
-                if(Number(accessToken.tokenBody.exp) <= (Date.now()/1000) - 60)
-                {
+                if (Number(accessToken.tokenBody.exp) <= (Date.now() / 1000) - 60) {
                     try {
                         const response = await authEndpointRequest(this.requestManager, 'refresh', {
                             token: accessToken.refreshToken
@@ -157,17 +152,17 @@ export class MangaDex extends Source {
     override async getSearchTags(): Promise<TagSection[]> {
         const sections: Record<string, TagSection> = {}
 
-        for(const tag of tagJSON) {
+        for (const tag of tagJSON) {
             const group = tag.data.attributes.group
 
-            if(sections[group] == null) {
+            if (sections[group] == null) {
                 sections[group] = createTagSection({
                     id: group,
                     label: group.charAt(0).toUpperCase() + group.slice(1),
                     tags: []
                 })
             }
-            const tagObject = createTag({id: tag.data.id, label: tag.data.attributes.name.en})
+            const tagObject = createTag({ id: tag.data.id, label: tag.data.attributes.name.en })
             // Since we already know that a section for the group has to exist, eslint is complaining
             // for no reason at all.
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -205,8 +200,8 @@ export class MangaDex extends Source {
             .buildUrl()
     }
 
-    async getCoversMapping(mangaIds: string[], ratings: string[]): Promise<{[id: string]: string}> {
-        const mapping: {[id: string]: string} = {}
+    async getCoversMapping(mangaIds: string[], ratings: string[]): Promise<{ [id: string]: string }> {
+        const mapping: { [id: string]: string } = {}
 
         const request = createRequestObject({
             url: new URLBuilder(this.MANGADEX_API)
@@ -254,7 +249,7 @@ export class MangaDex extends Source {
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
         const mangaDetails = json.data.attributes
-        const titles = <string[]> [
+        const titles = <string[]>[
             ...Object.values(mangaDetails.title),
             ...mangaDetails.altTitles.flatMap((x: never) => Object.values(x))
         ].map((x: string) => this.decodeHTMLEntity(x)).filter(x => x)
@@ -266,7 +261,7 @@ export class MangaDex extends Source {
         }
         const tags: Tag[] = []
         for (const tag of mangaDetails.tags) {
-            const tagName: {[index: string]: string} = tag.attributes.name
+            const tagName: { [index: string]: string } = tag.attributes.name
             tags.push(createTag({
                 id: tag.id,
                 label: Object.keys(tagName).map(keys => tagName[keys])[0] ?? 'Unknown'
@@ -328,7 +323,7 @@ export class MangaDex extends Source {
                     .addQueryParameter('offset', offset)
                     .addQueryParameter('includes', ['scanlation_group'])
                     .addQueryParameter('translatedLanguage', languages)
-                    .addQueryParameter('order', {'volume': 'desc', 'chapter': 'desc', 'publishAt': 'desc'})
+                    .addQueryParameter('order', { 'volume': 'desc', 'chapter': 'desc', 'publishAt': 'desc' })
                     .addQueryParameter('contentRating', ratings)
                     .addQueryParameter('includeFutureUpdates', '0')
                     .buildUrl(),
@@ -338,12 +333,12 @@ export class MangaDex extends Source {
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
             offset += 500
 
-            if(json.data === undefined) throw new Error(`Failed to parse json results for ${mangaId}`)
+            if (json.data === undefined) throw new Error(`Failed to parse json results for ${mangaId}`)
 
             for (const chapter of json.data) {
                 const chapterId = chapter.id
                 const chapterDetails = chapter.attributes
-                const name =  this.decodeHTMLEntity(chapterDetails.title)
+                const name = this.decodeHTMLEntity(chapterDetails.title)
                 const chapNum = Number(chapterDetails?.chapter)
                 const volume = Number(chapterDetails?.volume)
                 const langCode: any = MDLanguages.getPBCode(chapterDetails.translatedLanguage)
@@ -451,18 +446,18 @@ export class MangaDex extends Source {
 
         const response = await this.requestManager.schedule(request, 1)
         if (response.status != 200) {
-            return createPagedResults({results})
+            return createPagedResults({ results })
         }
 
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        if(json.data === undefined) {throw new Error('Failed to parse json for the given search')}
+        if (json.data === undefined) { throw new Error('Failed to parse json for the given search') }
 
         results = await parseMangaList(json.data, this, getSearchThumbnail)
 
         return createPagedResults({
             results,
-            metadata: {offset: offset + 100}
+            metadata: { offset: offset + 100 }
         })
     }
 
@@ -493,7 +488,7 @@ export class MangaDex extends Source {
                     url: new URLBuilder(this.MANGADEX_API)
                         .addPathComponent('manga')
                         .addQueryParameter('limit', 20)
-                        .addQueryParameter('order', {'followedCount': 'desc'})
+                        .addQueryParameter('order', { 'followedCount': 'desc' })
                         .addQueryParameter('contentRating', ratings)
                         .addQueryParameter('includes', ['cover_art'])
                         .buildUrl(),
@@ -510,7 +505,7 @@ export class MangaDex extends Source {
                     url: new URLBuilder(this.MANGADEX_API)
                         .addPathComponent('chapter')
                         .addQueryParameter('limit', 100)
-                        .addQueryParameter('order', {'publishAt': 'desc'})
+                        .addQueryParameter('order', { 'publishAt': 'desc' })
                         .addQueryParameter('translatedLanguage', languages)
                         .addQueryParameter('includes', ['manga'])
                         .addQueryParameter('includeFutureUpdates', '0')
@@ -537,9 +532,9 @@ export class MangaDex extends Source {
                     this.requestManager.schedule(section.request, 1).then(async response => {
                         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-                        if(json.data === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
+                        if (json.data === undefined) throw new Error(`Failed to parse json results for section ${section.section.title}`)
 
-                        switch(section.section.id) {
+                        switch (section.section.id) {
                             case 'latest_updates': {
                                 const coversMapping = await this.getCoversMapping(
                                     json.data.map((x: any) => {
@@ -609,7 +604,7 @@ export class MangaDex extends Source {
                                 }
                                 results.push(createMangaTile({
                                     id: recommendedId,
-                                    title: createIconText({text: this.decodeHTMLEntity(similarJson.title.en) ?? 'No Title'}),
+                                    title: createIconText({ text: this.decodeHTMLEntity(similarJson.title.en) ?? 'No Title' }),
                                     image
                                 }))
 
@@ -627,8 +622,8 @@ export class MangaDex extends Source {
 
                                         results.push(createMangaTile({
                                             id: manga.id,
-                                            title: createIconText({text: this.decodeHTMLEntity(manga.title.en) ?? 'No Title'}),
-                                            subtitleText: createIconText({text: `Similarity ${manga.score.toFixed(2)}`}),
+                                            title: createIconText({ text: this.decodeHTMLEntity(manga.title.en) ?? 'No Title' }),
+                                            subtitleText: createIconText({ text: `Similarity ${manga.score.toFixed(2)}` }),
                                             image
                                         }))
                                     }
@@ -655,12 +650,12 @@ export class MangaDex extends Source {
         const languages: string[] = await getLanguages(this.stateManager)
         let url = ''
 
-        switch(homepageSectionId) {
+        switch (homepageSectionId) {
             case 'popular': {
                 url = new URLBuilder(this.MANGADEX_API)
                     .addPathComponent('manga')
                     .addQueryParameter('limit', 100)
-                    .addQueryParameter('order', {'followedCount': 'desc'})
+                    .addQueryParameter('order', { 'followedCount': 'desc' })
                     .addQueryParameter('offset', offset)
                     .addQueryParameter('contentRating', ratings)
                     .addQueryParameter('includes', ['cover_art'])
@@ -672,7 +667,7 @@ export class MangaDex extends Source {
                     .addPathComponent('chapter')
                     .addQueryParameter('limit', 100)
                     .addQueryParameter('offset', offset)
-                    .addQueryParameter('order', {'publishAt': 'desc'})
+                    .addQueryParameter('order', { 'publishAt': 'desc' })
                     .addQueryParameter('translatedLanguage', languages)
                     .addQueryParameter('includes', ['manga'])
                     .addQueryParameter('includeFutureUpdates', '0')
@@ -689,9 +684,9 @@ export class MangaDex extends Source {
         const response = await this.requestManager.schedule(request, 1)
         const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-        if(json.data === undefined) throw new Error('Failed to parse json results for getViewMoreItems')
+        if (json.data === undefined) throw new Error('Failed to parse json results for getViewMoreItems')
 
-        switch(homepageSectionId) {
+        switch (homepageSectionId) {
             case 'latest_updates': {
                 const coversMapping = await this.getCoversMapping(json.data.map((x: any) => x.relationships.filter((x: any) => x.type == 'manga').map((x: any) => x.id)[0]), ratings)
                 results = await parseChapterList(json.data, coversMapping, this, getHomepageThumbnail, ratings)
@@ -703,7 +698,7 @@ export class MangaDex extends Source {
 
         return createPagedResults({
             results,
-            metadata: {offset: offset + 100, collectedIds}
+            metadata: { offset: offset + 100, collectedIds }
         })
     }
 
@@ -722,7 +717,7 @@ export class MangaDex extends Source {
                     .addQueryParameter('limit', 100)
                     .addQueryParameter('offset', offset)
                     .addQueryParameter('publishAtSince', updatedAt)
-                    .addQueryParameter('order', {'publishAt': 'desc'})
+                    .addQueryParameter('order', { 'publishAt': 'desc' })
                     .addQueryParameter('translatedLanguage', languages)
                     .addQueryParameter('includeFutureUpdates', '0')
                     .buildUrl(),
@@ -732,13 +727,13 @@ export class MangaDex extends Source {
             const response = await this.requestManager.schedule(request, 1)
 
             // If we have no content, there are no updates available
-            if(response.status == 204) {
+            if (response.status == 204) {
                 return
             }
 
             const json = (typeof response.data) === 'string' ? JSON.parse(response.data) : response.data
 
-            if(json.data === undefined) {
+            if (json.data === undefined) {
                 // Log this, no need to throw.
                 console.log(`Failed to parse JSON results for filterUpdatedManga using the date ${updatedAt} and the offset ${offset}`)
                 return
@@ -746,7 +741,7 @@ export class MangaDex extends Source {
 
             const mangaToUpdate: string[] = []
             for (const chapter of json.data) {
-                const mangaId = chapter.relationships.filter((x: any)=> x.type == 'manga')[0]?.id
+                const mangaId = chapter.relationships.filter((x: any) => x.type == 'manga')[0]?.id
 
                 if (ids.includes(mangaId) && !updatedManga.includes(mangaId)) {
                     mangaToUpdate.push(mangaId)
@@ -764,11 +759,11 @@ export class MangaDex extends Source {
                 }))
             }
         }
-        mangaUpdatesFoundCallback(createMangaUpdates({ids: []}))
+        mangaUpdatesFoundCallback(createMangaUpdates({ ids: [] }))
     }
 
     decodeHTMLEntity(str: string | undefined): string | undefined {
-        if(str == undefined) return undefined
+        if (str == undefined) return undefined
         return entities.decodeHTML(str)
     }
 }

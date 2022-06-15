@@ -380,7 +380,7 @@ export class URLBuilder {
         return this
     }
 
-    buildUrl({addTrailingSlash, includeUndefinedParameters} = {addTrailingSlash: false, includeUndefinedParameters: false}): string {
+    buildUrl({ addTrailingSlash, includeUndefinedParameters } = { addTrailingSlash: false, includeUndefinedParameters: false }): string {
         let finalUrl = this.baseUrl + '/'
 
         finalUrl += this.pathComponents.join('/')
@@ -448,7 +448,7 @@ class MDImageQualityClass {
         return this.ImageQualities.filter(ImageQuality => ImageQuality.enum == imageQualityEnum)[0]?.ending ?? ''
     }
 
-    getDefault(section: string): string{
+    getDefault(section: string): string {
         return this.ImageQualities.filter(ImageQuality => ImageQuality.default?.includes(section)).map(ImageQuality => ImageQuality.enum)[0] ?? ''
     }
 }

@@ -11,12 +11,15 @@ import {
     Tag,
 } from 'paperback-extensions-common'
 
+import entities = require('entities')
+
 export class Parser {
-    parseMangaDetails($:CheerioStatic, mangaId: string): Manga {
-        const titles = [$('.subj').text().split('\n')[0]?.trim() ?? '']
+
+    parseMangaDetails($: CheerioStatic, mangaId: string): Manga {
+        const title = $('.subj').text().split('\n')[0]?.trim() ?? ''
         const desc = $('p.summary').text().trim() ?? ''
         const image = $('.background_pic').find('img').attr('src') ?? ''
-        const rating = Number($('em.grade_num').text().replace(',','.').trim()) ?? 0
+        const rating = Number($('em.grade_num').text().replace(',', '.').trim()) ?? 0
         const status = MangaStatus.ONGOING
         const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim()
 
@@ -28,57 +31,72 @@ export class Parser {
 
         return createManga({
             id: mangaId,
-            titles,
+            titles: [this.decodeHTMLEntity(title)],
             image,
             author,
-            status,
             rating,
-            desc,
+            status,
+            desc: this.decodeHTMLEntity(desc),
             tags
         })
     }
 
-    
-    parseChapters($:CheerioStatic, mangaId:string, languageCode: string): Chapter[] {
+
+    parseChapters($: CheerioStatic, mangaId: string, languageCode: string): Chapter[] {
         const chapters: Chapter[] = []
         const langCode = this.parseLanguageCode(languageCode)
-        for (const chapter of $('#_episodeList').find('li').toArray()){
+
+        for (const chapter of $('#_episodeList').find('li').toArray()) {
             const id = $(chapter).attr('data-episode-no')
             const chapNum = Number(id)
             const name = $(chapter).find('.sub_title').find('span').first().text().trim()
             const time = new Date($(chapter).find('.date').text().trim())
+
             if (!id) continue
-            chapters.push(
-                createChapter({
-                    id,
-                    mangaId,
-                    chapNum,
-                    langCode,
-                    name,
-                    time
-                })
-            )
+
+            chapters.push(createChapter({
+                id,
+                mangaId,
+                chapNum: isNaN(chapNum) ? 0 : chapNum,
+                langCode,
+                name,
+                time
+            }))
         }
         return chapters
     }
+
     parseLanguageCode(languageCode: string): LanguageCode {
-        if(languageCode == 'en') return LanguageCode.ENGLISH
-        if(languageCode == 'fr') return LanguageCode.FRENCH
-        if(languageCode == 'de') return LanguageCode.GERMAN
-        if(languageCode == 'es') return LanguageCode.SPANISH
-        if(languageCode == 'th') return LanguageCode.THAI
-        if(languageCode == 'id') return LanguageCode.INDONESIAN
-        if(languageCode == 'zh-hant') return LanguageCode.CHINEESE
-        return LanguageCode.UNKNOWN
+        switch (languageCode) {
+            case 'en':
+                return LanguageCode.ENGLISH
+            case 'fr':
+                return LanguageCode.FRENCH
+            case 'de':
+                return LanguageCode.GERMAN
+            case 'es':
+                return LanguageCode.SPANISH
+            case 'th':
+                return LanguageCode.THAI
+            case 'id':
+                return LanguageCode.INDONESIAN
+            case 'zh-hant':
+                return LanguageCode.CHINEESE
+            default:
+                return LanguageCode.UNKNOWN
+        }
     }
 
-    parseChapterDetails($:CheerioStatic, mangaId:string, id: string): ChapterDetails{
+    parseChapterDetails($: CheerioStatic, mangaId: string, id: string): ChapterDetails {
         const pages: string[] = []
+
         for (const img of $('.viewer_lst').find('img').toArray()) {
             const imgUrl = $(img).attr('data-url')?.trim() ?? $(img).attr('src')?.trim()
+
             if (!imgUrl) continue
             pages.push(imgUrl)
         }
+
         return createChapterDetails({
             id,
             mangaId,
@@ -87,24 +105,29 @@ export class Parser {
         })
     }
 
-    parseSearchResults($:CheerioStatic, langString: any, type: string, tagSearch:string): MangaTile[]{
+    parseSearchResults($: CheerioStatic, langString: any, type: string, tagSearch: string): MangaTile[] {
         const results: MangaTile[] = []
+
         if (type == 'title') {
-            for(const result of $('.card_lst').find('li').toArray()){
+            for (const result of $('.card_lst').find('li').toArray()) {
                 const genre = $(result).find('span').text().toLowerCase().replace('like', '').trim()
                 const title = $(result).find('.subj').text().trim()
                 const urlTitle = title.replace(/-|'/g, '').replace(/ /g, '-').toLowerCase()
                 const idNumber = $(result).find('a').attr('href')?.split('titleNo=')[1]
                 const id = `${genre}/${urlTitle}/list?title_no=${idNumber}`
-                if (!id) continue
+                const subtitle = $(result).find('.author').text().trim() ?? ''
+
+                if (!id || !title) continue
                 const image = $(result).find('img').attr('src') ?? ''
                 results.push(createMangaTile({
-                    id,
-                    image,
-                    title: createIconText({ text: title})
+                    id: id,
+                    image: image ?? 'https://i.imgur.com/GYUxEX8.png',
+                    title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                    subtitleText: createIconText({ text: this.decodeHTMLEntity(subtitle) })
                 }))
             }
         }
+
         if (type == 'tag') {
             /* 
                 The layout on the genre page is 'h2' > 'ul' for each genre, 
@@ -115,14 +138,14 @@ export class Parser {
             let index = 0
 
             // Find all genre titles on page
-            for (const title of $('.card_wrap.genre').find('h2').toArray()){
+            for (const title of $('.card_wrap.genre').find('h2').toArray()) {
                 const tagTitle = $(title).attr('data-genre-seo')?.trim()
-                if(!tagTitle) continue
+                if (!tagTitle) continue
                 tagTitlesArray.push(tagTitle)
             }
 
             // Find corresponding list of webtoons
-            for (const tagComic of $('.card_wrap.genre').find('ul.card_lst').toArray()){
+            for (const tagComic of $('.card_wrap.genre').find('ul.card_lst').toArray()) {
                 const comicList = $(tagComic).find('li').toArray()
                 tagComicsArray.push(comicList)
             }
@@ -132,119 +155,165 @@ export class Parser {
                the index. For example, if the tag 'drama' is tagTitlesArray[1], then the drama webtoons
                list will be tagComicsArray[1]
             */
-            for (let i = 0; i < tagComicsArray.length; i++){
-                if(tagTitlesArray[i] == tagSearch) index = i
+            for (let i = 0; i < tagComicsArray.length; i++) {
+                if (tagTitlesArray[i] == tagSearch) index = i
             }
 
             // Use the index to add the correct webtoons to the results
             for (const comicTile of tagComicsArray[index] ?? []) {
+                const id = $(comicTile).find('a').attr('href')?.split(`${langString}/`)[1] ?? ''
                 const title = $(comicTile).find('.subj').text().trim()
                 const image = $(comicTile).find('img').attr('src') ?? ''
-                const id = $(comicTile).find('a').attr('href')?.split(`${langString}/`)[1] ?? ''
-                if(!id) continue
+                const subtitle = $(comicTile).find('.author').text().trim() ?? ''
+
+                if (!id || !title) continue
                 results.push(createMangaTile({
-                    id,
-                    image,
-                    title: createIconText({ text: title})
+                    id: id,
+                    image: image ?? 'https://i.imgur.com/GYUxEX8.png',
+                    title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                    subtitleText: createIconText({ text: this.decodeHTMLEntity(subtitle) })
                 }))
             }
         }
         return results
     }
-    parseHomeSectionTitles(languageCode: string) {
-        let popularTitle: string, newTrendTitle: string, canvasTitle: string
-        if(languageCode == 'fr') return [popularTitle = 'Nouvelle Tendance', newTrendTitle = 'Le Plus Populaire', canvasTitle = 'Canvas Le Plus Populaire']
-        if(languageCode == 'de') return [popularTitle = 'Neu und Beliebt', newTrendTitle = 'Beliebte', canvasTitle = 'Top Canvas']
-        if(languageCode == 'es') return [popularTitle = 'Más Popular', newTrendTitle = 'Nuevas Tendencias', canvasTitle = 'Más Popular En Canvas']
-        if(languageCode == 'th') return [popularTitle = 'อันดับตามประเภท', newTrendTitle = 'เรื่องใหม่มาแรง', canvasTitle = 'อันดับตามประเภท']
-        if(languageCode == 'id') return [popularTitle = 'TERPOPULER BERDASARKAN GENRE', newTrendTitle = 'BARU & TRENDING', canvasTitle = 'KANVAS TERPOPULER BERDASARKAN GENRE']
-        if(languageCode == 'zh-hant') return [popularTitle = '分類排行榜', newTrendTitle = '熱門新作排行榜', canvasTitle = '投稿新星作品分類排行榜']
-        return [popularTitle = 'Top Originals', newTrendTitle = 'New and Trending', canvasTitle = 'Top Canvas']    
-    }
-    parseHomeSections ($: CheerioStatic, sectionCallback: (section: HomeSection) => void, langString: any): void {
-        const [popularTitle, newTrendTitle, canvasTitle] = this.parseHomeSectionTitles(langString)
-        const popularSection = createHomeSection({id: '0',title: popularTitle!, type: HomeSectionType.singleRowNormal,view_more: false,})
-        const newTrendSection = createHomeSection({id: '1',title: newTrendTitle!, type: HomeSectionType.singleRowNormal,view_more: false,})
-        const canvasSection = createHomeSection({id: '2',title: canvasTitle!, type: HomeSectionType.singleRowNormal,view_more: false,})
-        const popular = []
-        const newTrend = []
-        const canvas = []
-      
+
+    parseHomeSections($: CheerioStatic, sectionCallback: (section: HomeSection) => void, langString: any): void {
+        let popularTitle, newTrendTitle, canvasTitle
+        switch (langString) {
+            case 'fr':
+                popularTitle = 'Nouvelle Tendance'
+                newTrendTitle = 'Le Plus Populaire'
+                canvasTitle = 'Canvas Le Plus Populaire'
+                break
+            case 'de':
+                popularTitle = 'Neu und Beliebt'
+                newTrendTitle = 'Beliebte'
+                canvasTitle = 'Top Canvas'
+                break
+            case 'es':
+                popularTitle = 'Más Popular'
+                newTrendTitle = 'Nuevas Tendencias'
+                canvasTitle = 'Más Popular En Canvas'
+                break
+            case 'th':
+                popularTitle = 'อันดับตามประเภท'
+                newTrendTitle = 'เรื่องใหม่มาแรง'
+                canvasTitle = 'อันดับตามประเภท'
+                break
+            case 'id':
+                popularTitle = 'TERPOPULER BERDASARKAN GENRE'
+                newTrendTitle = 'BARU & TRENDING'
+                canvasTitle = 'KANVAS TERPOPULER BERDASARKAN GENRE'
+                break
+            case 'zh-hant':
+                popularTitle = '分類排行榜'
+                newTrendTitle = '熱門新作排行榜'
+                canvasTitle = '投稿新星作品分類排行榜'
+                break
+            default:
+                popularTitle = 'Top Originals'
+                newTrendTitle = 'New and Trending'
+                canvasTitle = 'Top Canvas'
+        }
+
+        const popularSection = createHomeSection({
+            id: '0',
+            title: popularTitle,
+            type: HomeSectionType.singleRowNormal,
+            view_more: false
+        })
+
+        const newTrendSection = createHomeSection({
+            id: '1',
+            title: newTrendTitle,
+            type: HomeSectionType.singleRowNormal,
+            view_more: false
+        })
+
+        const canvasSection = createHomeSection({
+            id: '2', title: canvasTitle,
+            type: HomeSectionType.singleRowNormal,
+            view_more: false
+        })
+
+        const popularArray = []
         for (const popularComic of $('.ranking_lst.popular').next().find('ul > li').toArray()) {
-            if (popular.length >= 10) break
-            const mangaId = $('a', popularComic).attr('href')?.split(`${langString}/`)[1] ?? ''
-            if (mangaId.startsWith('top?rankingGenre')) continue
-            if (mangaId.startsWith('challenge')) continue
-            if (!mangaId) continue
+            if (popularArray.length >= 10) break
+            const id = $('a', popularComic).attr('href')?.split(`${langString}/`)[1] ?? ''
             const image = $(popularComic).find('img').attr('src') ?? ''
             const title = $(popularComic).find('.subj').text().trim() ?? ''
-            popular.push(
-                createMangaTile({
-                    id: mangaId,
-                    image: image ?? 'https://i.imgur.com/GYUxEX8.png',
-                    title: createIconText({
-                        text: title,
-                    }),
-                })
-            )
-        }
-        
-        popularSection.items = popular
-        sectionCallback(popularSection)
-      
+            const subtitle = $(popularComic).find('.author').text().trim() ?? ''
 
+            if (!id || !title || id.startsWith('challenge') || id.startsWith('top?rankingGenre')) continue
+
+            popularArray.push(createMangaTile({
+                id: id,
+                image: image ?? 'https://i.imgur.com/GYUxEX8.png',
+                title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                subtitleText: createIconText({ text: this.decodeHTMLEntity(subtitle) })
+            }))
+        }
+
+        popularSection.items = popularArray
+        sectionCallback(popularSection)
+
+        const newTrendArray = []
         for (const newTrendComic of $('ul.lst_type1').find('li').toArray()) {
-            if (newTrend.length >= 10) break
-            const mangaId = $('a',newTrendComic).attr('href')?.split(`${langString}/`)[1] ?? ''
+            if (newTrendArray.length >= 10) break
+            const id = $('a', newTrendComic).attr('href')?.split(`${langString}/`)[1] ?? ''
             const image = $(newTrendComic).find('img').attr('src') ?? ''
             const title = $(newTrendComic).find('.subj').text().trim() ?? ''
-            if (mangaId.startsWith('challenge')) continue
-            if(!mangaId) continue
-      
-            newTrend.push(
-                createMangaTile({
-                    id: mangaId,
-                    image: image ?? 'https://i.imgur.com/GYUxEX8.png',
-                    title: createIconText({
-                        text: title,
-                    }),
-                })
-            )
+            const subtitle = $(newTrendComic).find('.author').text().trim() ?? ''
+
+            if (!id || !title || id.startsWith('challenge')) continue
+
+            newTrendArray.push(createMangaTile({
+                id: id,
+                image: image ?? 'https://i.imgur.com/GYUxEX8.png',
+                title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                subtitleText: createIconText({ text: this.decodeHTMLEntity(subtitle) })
+            }))
         }
-        
-        newTrendSection.items = newTrend
+
+        newTrendSection.items = newTrendArray
         sectionCallback(newTrendSection)
 
+        const canvasArray = []
         for (const canvasComic of $('.ranking_lst.popular').next().next().find('ul > li').toArray()) {
-            if (canvas.length >= 10) break
-            const mangaId = $('a',canvasComic).attr('href')?.split(`${langString}/`)[1] ?? ''
+            if (canvasArray.length >= 10) break
+            const id = $('a', canvasComic).attr('href')?.split(`${langString}/`)[1] ?? ''
             const image = $(canvasComic).find('img').attr('src') ?? ''
             const title = $(canvasComic).find('.subj').text().trim() ?? ''
-            if (mangaId.startsWith('top?rankingGenre')) continue
-            if(!mangaId)continue
-      
-            canvas.push(
-                createMangaTile({
-                    id: mangaId,
-                    image: image ?? 'https://i.imgur.com/GYUxEX8.png',
-                    title: createIconText({
-                        text: title,
-                    }),
-                })
-            )
+            const subtitle = $(canvasComic).find('.author').text().trim() ?? ''
+
+            if (!id || !title || id.startsWith('top?rankingGenre')) continue
+
+            canvasArray.push(createMangaTile({
+                id: id,
+                image: image ?? 'https://i.imgur.com/GYUxEX8.png',
+                title: createIconText({ text: this.decodeHTMLEntity(title) }),
+                subtitleText: createIconText({ text: this.decodeHTMLEntity(subtitle) })
+            }))
         }
-        
-        canvasSection.items = canvas
+
+        canvasSection.items = canvasArray
         sectionCallback(canvasSection)
     }
-    parseTags($: CheerioStatic):TagSection[]{
+
+    parseTags($: CheerioStatic): TagSection[] {
         const genres: Tag[] = []
-        for (const tagHeader of $('div.card_wrap.genre').find('h2').toArray()){
+        for (const tagHeader of $('div.card_wrap.genre').find('h2').toArray()) {
             const id = $(tagHeader).attr('data-genre-seo')?.trim() ?? ''
-            if(!id) continue
             const label = $(tagHeader).text().trim()
+            if (!id || !label) continue
+
             genres.push(createTag({ label: label, id: id }))
         }
         return [createTagSection({ id: '0', label: 'genres', tags: genres })]
+    }
+
+    protected decodeHTMLEntity(str: string): string {
+        return entities.decodeHTML(str)
     }
 }

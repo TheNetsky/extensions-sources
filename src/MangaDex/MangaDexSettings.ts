@@ -140,7 +140,7 @@ export const saveAccessToken = async (stateManager: SourceStateManager, accessTo
         stateManager.keychain.store('refresh_token', refreshToken)
     ])
 
-    if(!accessToken) return undefined
+    if (!accessToken) return undefined
 
     return {
         accessToken,
@@ -150,7 +150,7 @@ export const saveAccessToken = async (stateManager: SourceStateManager, accessTo
 }
 
 export const parseAccessToken = async (accessToken: string | undefined): Promise<any | undefined> => {
-    if(!accessToken) return undefined
+    if (!accessToken) return undefined
 
     const tokenBodyBase64 = accessToken.split('.')[1]
     if (!tokenBodyBase64) return undefined
@@ -173,7 +173,7 @@ export const authEndpointRequest = async (requestManager: RequestManager, endpoi
         throw new Error('Request failed with error code:' + response.status)
     }
 
-    const jsonData = typeof(response.data) === 'string' ? JSON.parse(response.data) : response.data
+    const jsonData = typeof (response.data) === 'string' ? JSON.parse(response.data) : response.data
     if (jsonData.result != 'ok') {
         throw new Error('Request failed with errors: ' + jsonData.errors.map((x: any) => `[${x.title}]: ${x.detail}`))
     }
@@ -190,11 +190,11 @@ export const accountSettings = async (stateManager: SourceStateManager, requestM
             value: undefined,
             form: createForm({
                 onSubmit: async (values) => {
-                    if(!values.username) {
+                    if (!values.username) {
                         throw new Error('Username must not be empty')
                     }
 
-                    if(!values.password) {
+                    if (!values.password) {
                         throw new Error('Password must not be empty')
                     }
 

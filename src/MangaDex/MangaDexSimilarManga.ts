@@ -22,7 +22,7 @@ export const sliceRecommendedIds = async (stateManager: SourceStateManager, amou
 export const addRecommendedId = async (stateManager: SourceStateManager, mangaId: string): Promise<void> => {
     // Add an id to the list of manga that should be used for recommendations
     const recommendedIds: string[] = await getRecommendedIds(stateManager)
-    
+
     // If the id is already in the list, we remove it to put it at the beginning
     const index = recommendedIds.indexOf(mangaId, 0)
     if (index > -1) {

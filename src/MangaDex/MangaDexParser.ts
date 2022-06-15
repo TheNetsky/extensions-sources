@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { MangaTile} from 'paperback-extensions-common'
+import { MangaTile } from 'paperback-extensions-common'
 import { MDImageQuality } from './MangaDexHelper'
 
 export const parseMangaList = async (object: any, source: any, thumbnailSelector: any): Promise<MangaTile[]> => {
@@ -15,15 +15,15 @@ export const parseMangaList = async (object: any, source: any, thumbnailSelector
 
         results.push(createMangaTile({
             id: mangaId,
-            title: createIconText({text: title}),
+            title: createIconText({ text: title }),
             image
         }))
     }
-    
+
     return results
 }
 
-export const parseChapterList = async (chapterObject: any, coversMapping: {[id: string]: string}, source: any, thumbnailSelector: any, ratings: string[]): Promise<MangaTile[]> => {
+export const parseChapterList = async (chapterObject: any, coversMapping: { [id: string]: string }, source: any, thumbnailSelector: any, ratings: string[]): Promise<MangaTile[]> => {
     const results: MangaTile[] = []
 
     for (const chapter of chapterObject) {
@@ -40,11 +40,11 @@ export const parseChapterList = async (chapterObject: any, coversMapping: {[id: 
 
         results.push(createMangaTile({
             id: mangaId,
-            title: createIconText({text: title}),
-            subtitleText: createIconText({text: subtitle}),
+            title: createIconText({ text: title }),
+            subtitleText: createIconText({ text: subtitle }),
             image: image
         }))
     }
-    
+
     return results
 }
