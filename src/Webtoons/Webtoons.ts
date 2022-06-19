@@ -138,8 +138,10 @@ export class Webtoons extends Source {
         let tagSearch
 
         if (query.title) {
+            const searchType = query?.includedTags?.map((x: any) => x.id)[0] ?? 'WEBTOON' // Search will return "Canvas" titles or "Original" titles. Original is default. Cannot return both.
+            tagSearch = searchType
             request = createRequestObject({
-                url: `${WEBTOONS_DOMAIN}/${lang[0]}/search?keyword=${(query.title ?? '').replace(/ /g, '+')}&page=${page}`,
+                url: `${WEBTOONS_DOMAIN}/${lang[0]}/search?keyword=${(query.title ?? '').replace(/ /g, '+')}&searchType=${searchType}&page=${page}`,
                 method: 'GET'
             })
 
@@ -149,7 +151,6 @@ export class Webtoons extends Source {
                 type = 'tag'
                 tagSearch = hasTag
             }
-
             request = createRequestObject({
                 url: `${WEBTOONS_DOMAIN}/${lang[0]}/genre`,
                 method: 'GET'
