@@ -18,7 +18,7 @@ export class Parser {
     parseMangaDetails($: CheerioStatic, mangaId: string): Manga {
         const title = $('.subj').text().split('\n')[0]?.trim() ?? ''
         const desc = $('p.summary').text().trim() ?? ''
-        const image = $('.background_pic').find('img').attr('src') ?? ''
+        const image = $('.background_pic').find('img').attr('src') ?? $('.detail_chal_pic').find('img').attr('src') 
         const rating = Number($('em.grade_num').text().replace(',', '.').trim()) ?? 0
         const status = MangaStatus.ONGOING
         const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim()
@@ -32,7 +32,7 @@ export class Parser {
         return createManga({
             id: mangaId,
             titles: [this.decodeHTMLEntity(title)],
-            image,
+            image: image ?? '',
             author,
             rating,
             status,
