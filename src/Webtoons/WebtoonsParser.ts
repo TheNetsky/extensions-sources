@@ -18,7 +18,7 @@ export class Parser {
     parseMangaDetails($: CheerioStatic, mangaId: string): Manga {
         const title = $('.subj').text().split('\n')[0]?.trim() ?? ''
         const desc = $('p.summary').text().trim() ?? ''
-        const image = $('.background_pic').find('img').attr('src') ?? ''
+        const image = $('.background_pic').find('img').attr('src') ?? $('.detail_chal_pic').find('img').attr('src') 
         const rating = Number($('em.grade_num').text().replace(',', '.').trim()) ?? 0
         const status = MangaStatus.ONGOING
         const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim()
@@ -32,7 +32,7 @@ export class Parser {
         return createManga({
             id: mangaId,
             titles: [this.decodeHTMLEntity(title)],
-            image,
+            image: image ?? '',
             author,
             rating,
             status,
@@ -109,12 +109,13 @@ export class Parser {
         const results: MangaTile[] = []
 
         if (type == 'title') {
-            for (const result of $('.card_lst').find('li').toArray()) {
+            const resultUl = tagSearch == 'CHALLENGE' ? '.challenge_lst.search' : '.card_lst'
+            for (const result of $(resultUl).find('li').toArray()) {
                 const genre = $(result).find('span').text().toLowerCase().replace('like', '').trim()
                 const title = $(result).find('.subj').text().trim()
                 const urlTitle = title.replace(/-|'/g, '').replace(/ /g, '-').toLowerCase()
                 const idNumber = $(result).find('a').attr('href')?.split('titleNo=')[1]
-                const id = `${genre}/${urlTitle}/list?title_no=${idNumber}`
+                const id = `${tagSearch = 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`
                 const subtitle = $(result).find('.author').text().trim() ?? ''
 
                 if (!id || !title) continue
@@ -310,7 +311,14 @@ export class Parser {
 
             genres.push(createTag({ label: label, id: id }))
         }
-        return [createTagSection({ id: '0', label: 'genres', tags: genres })]
+        // Allows for users to search for Original or Canvas comics. Cannot search for both.
+        const searchType: Tag[] = [
+            createTag({label: 'Canvas', id:'CHALLENGE'}),
+            createTag({label: 'Original',id:'WEBTOON'})
+        ]
+        const genresSection = createTagSection({ id: '0', label: 'genres', tags: genres })
+        const searchTypeSection = createTagSection({ id: '1', label: 'search-type', tags: searchType})
+        return [genresSection, searchTypeSection]
     }
 
     protected decodeHTMLEntity(str: string): string {

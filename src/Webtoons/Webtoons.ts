@@ -28,7 +28,7 @@ const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) Appl
 let langString = 'en' // Only used for 'getMangaShareUrl' function
 
 export const WebtoonsInfo: SourceInfo = {
-    version: '2.0.0',
+    version: '2.1.0',
     name: 'Webtoons',
     description: 'Extension that pulls comics from Webtoons.',
     author: 'btylerh7',
@@ -138,8 +138,10 @@ export class Webtoons extends Source {
         let tagSearch
 
         if (query.title) {
+            const searchType = query?.includedTags?.map((x: any) => x.id)[0] ?? 'WEBTOON' // Search will return "Canvas" titles or "Original" titles. Original is default. Cannot return both.
+            tagSearch = searchType
             request = createRequestObject({
-                url: `${WEBTOONS_DOMAIN}/${lang[0]}/search?keyword=${(query.title ?? '').replace(/ /g, '+')}&page=${page}`,
+                url: `${WEBTOONS_DOMAIN}/${lang[0]}/search?keyword=${(query.title ?? '').replace(/ /g, '+')}&searchType=${searchType}&page=${page}`,
                 method: 'GET'
             })
 
@@ -149,7 +151,6 @@ export class Webtoons extends Source {
                 type = 'tag'
                 tagSearch = hasTag
             }
-
             request = createRequestObject({
                 url: `${WEBTOONS_DOMAIN}/${lang[0]}/genre`,
                 method: 'GET'
