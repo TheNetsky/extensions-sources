@@ -921,7 +921,7 @@ const WEBTOONS_MOBILE_DOMAIN = 'https://m.webtoons.com';
 const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1';
 let langString = 'en'; // Only used for 'getMangaShareUrl' function
 exports.WebtoonsInfo = {
-    version: '2.0.0',
+    version: '2.1.0',
     name: 'Webtoons',
     description: 'Extension that pulls comics from Webtoons.',
     author: 'btylerh7',
@@ -1015,8 +1015,10 @@ class Webtoons extends paperback_extensions_common_1.Source {
         let type = 'title';
         let tagSearch;
         if (query.title) {
+            const searchType = query?.includedTags?.map((x) => x.id)[0] ?? 'WEBTOON'; // Search will return "Canvas" titles or "Original" titles. Original is default. Cannot return both.
+            tagSearch = searchType;
             request = createRequestObject({
-                url: `${WEBTOONS_DOMAIN}/${lang[0]}/search?keyword=${(query.title ?? '').replace(/ /g, '+')}&page=${page}`,
+                url: `${WEBTOONS_DOMAIN}/${lang[0]}/search?keyword=${(query.title ?? '').replace(/ /g, '+')}&searchType=${searchType}&page=${page}`,
                 method: 'GET'
             });
         }
@@ -1075,7 +1077,7 @@ class Parser {
     parseMangaDetails($, mangaId) {
         const title = $('.subj').text().split('\n')[0]?.trim() ?? '';
         const desc = $('p.summary').text().trim() ?? '';
-        const image = $('.background_pic').find('img').attr('src') ?? '';
+        const image = $('.background_pic').find('img').attr('src') ?? $('.detail_chal_pic').find('img').attr('src');
         const rating = Number($('em.grade_num').text().replace(',', '.').trim()) ?? 0;
         const status = paperback_extensions_common_1.MangaStatus.ONGOING;
         const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim();
@@ -1087,7 +1089,7 @@ class Parser {
         return createManga({
             id: mangaId,
             titles: [this.decodeHTMLEntity(title)],
-            image,
+            image: image ?? '',
             author,
             rating,
             status,
@@ -1154,12 +1156,13 @@ class Parser {
     parseSearchResults($, langString, type, tagSearch) {
         const results = [];
         if (type == 'title') {
-            for (const result of $('.card_lst').find('li').toArray()) {
+            const resultUl = tagSearch == 'CHALLENGE' ? '.challenge_lst.search' : '.card_lst';
+            for (const result of $(resultUl).find('li').toArray()) {
                 const genre = $(result).find('span').text().toLowerCase().replace('like', '').trim();
                 const title = $(result).find('.subj').text().trim();
                 const urlTitle = title.replace(/-|'/g, '').replace(/ /g, '-').toLowerCase();
                 const idNumber = $(result).find('a').attr('href')?.split('titleNo=')[1];
-                const id = `${genre}/${urlTitle}/list?title_no=${idNumber}`;
+                const id = `${tagSearch = 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`;
                 const subtitle = $(result).find('.author').text().trim() ?? '';
                 if (!id || !title)
                     continue;
@@ -1341,7 +1344,14 @@ class Parser {
                 continue;
             genres.push(createTag({ label: label, id: id }));
         }
-        return [createTagSection({ id: '0', label: 'genres', tags: genres })];
+        // Allows for users to search for Original or Canvas comics. Cannot search for both.
+        const searchType = [
+            createTag({ label: 'Canvas', id: 'CHALLENGE' }),
+            createTag({ label: 'Original', id: 'WEBTOON' })
+        ];
+        const genresSection = createTagSection({ id: '0', label: 'genres', tags: genres });
+        const searchTypeSection = createTagSection({ id: '1', label: 'search-type', tags: searchType });
+        return [genresSection, searchTypeSection];
     }
     decodeHTMLEntity(str) {
         return entities.decodeHTML(str);
