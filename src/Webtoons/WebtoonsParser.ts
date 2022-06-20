@@ -115,7 +115,7 @@ export class Parser {
                 const title = $(result).find('.subj').text().trim()
                 const urlTitle = title.replace(/-|'/g, '').replace(/ /g, '-').toLowerCase()
                 const idNumber = $(result).find('a').attr('href')?.split('titleNo=')[1]
-                const id = `${tagSearch = 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`
+                const id = `${tagSearch == 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`
                 const subtitle = $(result).find('.author').text().trim() ?? ''
 
                 if (!id || !title) continue
