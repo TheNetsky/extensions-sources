@@ -28,7 +28,7 @@ const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) Appl
 let langString = 'en' // Only used for 'getMangaShareUrl' function
 
 export const WebtoonsInfo: SourceInfo = {
-    version: '2.0.0',
+    version: '2.1.0',
     name: 'Webtoons',
     description: 'Extension that pulls comics from Webtoons.',
     author: 'btylerh7',
