@@ -921,7 +921,7 @@ const WEBTOONS_MOBILE_DOMAIN = 'https://m.webtoons.com';
 const userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1';
 let langString = 'en'; // Only used for 'getMangaShareUrl' function
 exports.WebtoonsInfo = {
-    version: '2.1.0',
+    version: '2.1.1',
     name: 'Webtoons',
     description: 'Extension that pulls comics from Webtoons.',
     author: 'btylerh7',
@@ -1162,7 +1162,7 @@ class Parser {
                 const title = $(result).find('.subj').text().trim();
                 const urlTitle = title.replace(/-|'/g, '').replace(/ /g, '-').toLowerCase();
                 const idNumber = $(result).find('a').attr('href')?.split('titleNo=')[1];
-                const id = `${tagSearch = 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`;
+                const id = `${tagSearch == 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`;
                 const subtitle = $(result).find('.author').text().trim() ?? '';
                 if (!id || !title)
                     continue;
