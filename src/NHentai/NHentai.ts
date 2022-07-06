@@ -36,7 +36,7 @@ const NHENTAI_URL = 'https://nhentai.net'
 const API = NHENTAI_URL + '/api'
 
 export const NHentaiInfo: SourceInfo = {
-    version: '3.2.3',
+    version: '3.2.4',
     name: 'nhentai',
     icon: 'icon.png',
     author: 'NotMarek',
@@ -58,7 +58,7 @@ export const NHentaiInfo: SourceInfo = {
 
 const language = async (stateManager: SourceStateManager): Promise<string> => {
     const lang = (await stateManager.retrieve('languages') as string) ?? ''
-    if (lang.length === 0) {
+    if (lang == '') {
         return '""'
     }
     else {
@@ -81,7 +81,7 @@ const extraArgs = async (stateManager: SourceStateManager): Promise<string> => {
     return ` ${args}`
 }
 
-const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.124 Safari/537.36 Edg/102.0.1245.44'
+const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 12_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15'
 
 export class NHentai extends Source {
     readonly requestManager: RequestManager = createRequestManager({

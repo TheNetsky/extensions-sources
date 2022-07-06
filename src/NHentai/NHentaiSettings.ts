@@ -32,7 +32,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                 await Promise.all([
                     stateManager.store('languages', values.languages),
                     stateManager.store('sort_order', values.sort_order),
-                    stateManager.store('extra_args', values.extra_args),
+                    stateManager.store('extra_args', values.extra_args.replace(/[“”‘’]/g,'"')),
                 ])
             },
             validate: async () => true,
