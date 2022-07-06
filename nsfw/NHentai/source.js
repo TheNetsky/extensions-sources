@@ -395,7 +395,7 @@ const NHentaiSettings_1 = require("./NHentaiSettings");
 const NHENTAI_URL = 'https://nhentai.net';
 const API = NHENTAI_URL + '/api';
 exports.NHentaiInfo = {
-    version: '3.2.3',
+    version: '3.2.4',
     name: 'nhentai',
     icon: 'icon.png',
     author: 'NotMarek',
@@ -417,7 +417,7 @@ exports.NHentaiInfo = {
 const language = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const lang = (_a = (yield stateManager.retrieve('languages'))) !== null && _a !== void 0 ? _a : '';
-    if (lang.length === 0) {
+    if (lang == '') {
         return '""';
     }
     else {
@@ -439,7 +439,7 @@ const extraArgs = (stateManager) => __awaiter(void 0, void 0, void 0, function* 
     const args = yield NHentaiSettings_1.getExtraArgs(stateManager);
     return ` ${args}`;
 });
-const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.124 Safari/537.36 Edg/102.0.1245.44';
+const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 12_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15';
 class NHentai extends paperback_extensions_common_1.Source {
     constructor() {
         super(...arguments);
@@ -858,7 +858,7 @@ const settings = (stateManager) => {
                 yield Promise.all([
                     stateManager.store('languages', values.languages),
                     stateManager.store('sort_order', values.sort_order),
-                    stateManager.store('extra_args', values.extra_args),
+                    stateManager.store('extra_args', values.extra_args.replace(/[“”‘’]/g, '"')),
                 ]);
             }),
             validate: () => __awaiter(void 0, void 0, void 0, function* () { return true; }),
