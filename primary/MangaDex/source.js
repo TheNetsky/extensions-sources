@@ -2955,7 +2955,7 @@ exports.MangaDexInfo = {
     description: 'Extension that pulls manga from MangaDex',
     icon: 'icon.png',
     name: 'MangaDex',
-    version: '2.1.8',
+    version: '2.1.9',
     authorWebsite: 'https://github.com/nar1n',
     websiteBaseURL: MANGADEX_DOMAIN,
     contentRating: paperback_extensions_common_1.ContentRating.EVERYONE,
@@ -4152,7 +4152,15 @@ const parseAccessToken = async (accessToken) => {
     return JSON.parse(tokenBodyJSON);
 };
 exports.parseAccessToken = parseAccessToken;
-const authEndpointRequest = async (requestManager, endpoint, payload) => {
+const authRequestCache = {};
+const authEndpointRequest = (requestManager, endpoint, payload) => {
+    if (authRequestCache[endpoint] == undefined) {
+        authRequestCache[endpoint] = _authEndpointRequest(requestManager, endpoint, payload).finally(() => { delete authRequestCache[endpoint]; });
+    }
+    return authRequestCache[endpoint];
+};
+exports.authEndpointRequest = authEndpointRequest;
+const _authEndpointRequest = async (requestManager, endpoint, payload) => {
     const response = await requestManager.schedule(createRequestObject({
         method: 'POST',
         url: 'https://api.mangadex.org/auth/' + endpoint,
@@ -4170,7 +4178,6 @@ const authEndpointRequest = async (requestManager, endpoint, payload) => {
     }
     return jsonData;
 };
-exports.authEndpointRequest = authEndpointRequest;
 const accountSettings = async (stateManager, requestManager) => {
     const accessToken = await (0, exports.getAccessToken)(stateManager);
     if (!accessToken) {
