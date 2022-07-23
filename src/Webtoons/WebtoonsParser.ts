@@ -21,7 +21,7 @@ export class Parser {
         const image = $('.background_pic').find('img').attr('src') ?? $('.detail_chal_pic').find('img').attr('src') 
         const rating = Number($('em.grade_num').text().replace(',', '.').trim()) ?? 0
         const status = MangaStatus.ONGOING
-        const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim()
+        const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim() ?? ''
 
         // The site only provides one primary tag for each series
         const label = $('.genre').text().replace(/ /g, '-').toLowerCase().trim()
@@ -33,7 +33,7 @@ export class Parser {
             id: mangaId,
             titles: [this.decodeHTMLEntity(title)],
             image: image ?? '',
-            author,
+            author: this.decodeHTMLEntity(author),
             rating,
             status,
             desc: this.decodeHTMLEntity(desc),
@@ -59,7 +59,7 @@ export class Parser {
                 mangaId,
                 chapNum: isNaN(chapNum) ? 0 : chapNum,
                 langCode,
-                name,
+                name: this.decodeHTMLEntity(name),
                 time
             }))
         }
