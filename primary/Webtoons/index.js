@@ -921,7 +921,7 @@ const WEBTOONS_MOBILE_DOMAIN = 'https://m.webtoons.com';
 const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.124 Safari/537.36 Edg/102.0.1245.44';
 let langString = 'en'; // Only used for 'getMangaShareUrl' function
 exports.WebtoonsInfo = {
-    version: '2.1.1',
+    version: '2.1.2',
     name: 'Webtoons',
     description: 'Extension that pulls comics from Webtoons.',
     author: 'btylerh7',
@@ -1080,7 +1080,7 @@ class Parser {
         const image = $('.background_pic').find('img').attr('src') ?? $('.detail_chal_pic').find('img').attr('src');
         const rating = Number($('em.grade_num').text().replace(',', '.').trim()) ?? 0;
         const status = paperback_extensions_common_1.MangaStatus.ONGOING;
-        const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim();
+        const author = $('.author').text().trim().split(/\r?\n/)[0]?.trim() ?? '';
         // The site only provides one primary tag for each series
         const label = $('.genre').text().replace(/ /g, '-').toLowerCase().trim();
         const genreId = $('.genre').text().trim();
@@ -1090,7 +1090,7 @@ class Parser {
             id: mangaId,
             titles: [this.decodeHTMLEntity(title)],
             image: image ?? '',
-            author,
+            author: this.decodeHTMLEntity(author),
             rating,
             status,
             desc: this.decodeHTMLEntity(desc),
@@ -1112,7 +1112,7 @@ class Parser {
                 mangaId,
                 chapNum: isNaN(chapNum) ? 0 : chapNum,
                 langCode,
-                name,
+                name: this.decodeHTMLEntity(name),
                 time
             }));
         }
