@@ -111,9 +111,9 @@ export class Parser {
         if (type == 'title') {
             const resultUl = tagSearch == 'CHALLENGE' ? '.challenge_lst.search' : '.card_lst'
             for (const result of $(resultUl).find('li').toArray()) {
-                const genre = $(result).find('span').text().toLowerCase().replace('like', '').trim()
+                const genre = $(result).find('span').text().toLowerCase().replace('like', '').replace(/ /g, '-').trim()
                 const title = $(result).find('.subj').text().trim()
-                const urlTitle = title.replace(/-|'/g, '').replace(/ /g, '-').toLowerCase()
+                const urlTitle = title.replace(/-|'|:/g, '').replace(/ /g, '-').toLowerCase()
                 const idNumber = $(result).find('a').attr('href')?.split('titleNo=')[1]
                 const id = `${tagSearch == 'CHALLENGE' ? 'challenge' : genre}/${urlTitle}/list?title_no=${idNumber}`
                 const subtitle = $(result).find('.author').text().trim() ?? ''
