@@ -28,7 +28,7 @@ const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 let langString = 'en' // Only used for 'getMangaShareUrl' function
 
 export const WebtoonsInfo: SourceInfo = {
-    version: '2.1.2',
+    version: '2.1.3',
     name: 'Webtoons',
     description: 'Extension that pulls comics from Webtoons.',
     author: 'btylerh7',
