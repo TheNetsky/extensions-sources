@@ -377,15 +377,6 @@ __exportStar(require("./RawData"), exports);
 
 },{"./Chapter":6,"./ChapterDetails":7,"./Constants":8,"./DynamicUI":24,"./HomeSection":25,"./Languages":26,"./Manga":27,"./MangaTile":28,"./MangaUpdate":29,"./PagedResults":30,"./RawData":31,"./RequestHeaders":32,"./RequestInterceptor":33,"./RequestManager":34,"./RequestObject":35,"./ResponseObject":36,"./SearchField":37,"./SearchRequest":38,"./SourceInfo":39,"./SourceManga":40,"./SourceStateManager":41,"./SourceTag":42,"./TagSection":43,"./TrackedManga":44,"./TrackedMangaChapterReadAction":45,"./TrackerActionQueue":46}],48:[function(require,module,exports){
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NHentai = exports.NHentaiInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
@@ -414,31 +405,29 @@ exports.NHentaiInfo = {
         }
     ]
 };
-const language = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const lang = (_a = (yield stateManager.retrieve('languages'))) !== null && _a !== void 0 ? _a : '';
+const language = async (stateManager) => {
+    const lang = await stateManager.retrieve('languages') ?? '';
     if (lang == '') {
         return '""';
     }
     else {
         return `language:${lang}`;
     }
-});
-const sortOrder = (query, stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b, _c, _d, _e;
+};
+const sortOrder = async (query, stateManager) => {
     const inQuery = NHentaiHelper_1.NHSortOrders.containsShortcut(query);
-    if (((_b = inQuery[0]) === null || _b === void 0 ? void 0 : _b.length) !== 0) {
-        return [(_c = inQuery[0]) !== null && _c !== void 0 ? _c : '', query.replace((_d = inQuery[1]) !== null && _d !== void 0 ? _d : '', '')];
+    if (inQuery[0]?.length !== 0) {
+        return [inQuery[0] ?? '', query.replace(inQuery[1] ?? '', '')];
     }
     else {
-        const sortOrder = (_e = (yield stateManager.retrieve('sort_order'))) !== null && _e !== void 0 ? _e : NHentaiHelper_1.NHSortOrders.getDefault();
+        const sortOrder = await stateManager.retrieve('sort_order') ?? NHentaiHelper_1.NHSortOrders.getDefault();
         return [sortOrder, query];
     }
-});
-const extraArgs = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    const args = yield NHentaiSettings_1.getExtraArgs(stateManager);
+};
+const extraArgs = async (stateManager) => {
+    const args = await NHentaiSettings_1.getExtraArgs(stateManager);
     return ` ${args}`;
-});
+};
 const userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 12_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Safari/605.1.15';
 class NHentai extends paperback_extensions_common_1.Source {
     constructor() {
@@ -447,159 +436,145 @@ class NHentai extends paperback_extensions_common_1.Source {
             requestsPerSecond: 3,
             requestTimeout: 15000,
             interceptor: {
-                interceptRequest: (request) => __awaiter(this, void 0, void 0, function* () {
-                    var _a;
-                    request.headers = Object.assign(Object.assign({}, ((_a = request.headers) !== null && _a !== void 0 ? _a : {})), {
-                        'user-agent': userAgent,
-                        'referer': `${NHENTAI_URL}/`
-                    });
+                interceptRequest: async (request) => {
+                    request.headers = {
+                        ...(request.headers ?? {}),
+                        ...{
+                            'user-agent': userAgent,
+                            'referer': `${NHENTAI_URL}/`
+                        }
+                    };
                     return request;
-                }),
-                interceptResponse: (response) => __awaiter(this, void 0, void 0, function* () {
+                },
+                interceptResponse: async (response) => {
                     return response;
-                })
+                }
             }
         });
         this.stateManager = createSourceStateManager({});
     }
-    getSourceMenu() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return Promise.resolve(createSection({
-                id: 'main',
-                header: 'Source Settings',
-                rows: () => Promise.resolve([
-                    NHentaiSettings_1.settings(this.stateManager),
-                    NHentaiSettings_1.resetSettings(this.stateManager),
-                ])
-            }));
-        });
+    async getSourceMenu() {
+        return Promise.resolve(createSection({
+            id: 'main',
+            header: 'Source Settings',
+            rows: () => Promise.resolve([
+                NHentaiSettings_1.settings(this.stateManager),
+                NHentaiSettings_1.resetSettings(this.stateManager),
+            ])
+        }));
     }
     getMangaShareUrl(mangaId) {
         return `${NHENTAI_URL}/g/${mangaId}`;
     }
-    getMangaDetails(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
+    async getMangaDetails(mangaId) {
+        const request = createRequestObject({
+            url: `${API}/gallery/${mangaId}`,
+            method: 'GET'
+        });
+        const data = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(data.status);
+        const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+        return NHentaiParser_1.parseGallery(json_data);
+    }
+    async getChapters(mangaId) {
+        const request = createRequestObject({
+            url: `${API}/gallery/${mangaId}`,
+            method: 'GET'
+        });
+        const data = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(data.status);
+        const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+        return [NHentaiParser_1.parseGalleryIntoChapter(json_data, mangaId)];
+    }
+    async getChapterDetails(mangaId) {
+        const request = createRequestObject({
+            url: `${API}/gallery/${mangaId}`,
+            method: 'GET'
+        });
+        const data = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(data.status);
+        const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+        return NHentaiParser_1.parseChapterDetails(json_data, mangaId);
+    }
+    async getSearchResults(query, metadata) {
+        const page = metadata?.page ?? 1;
+        const title = query.title ?? '';
+        if (metadata?.stopSearch ?? false) {
+            return createPagedResults({
+                results: [],
+                metadata: {
+                    stopSearch: true
+                }
+            });
+        }
+        if (/^\d+$/.test(title)) {
             const request = createRequestObject({
-                url: `${API}/gallery/${mangaId}`,
+                url: `${API}/gallery/${title}`,
                 method: 'GET'
             });
-            const data = yield this.requestManager.schedule(request, 1);
+            const data = await this.requestManager.schedule(request, 1);
             this.CloudFlareError(data.status);
             const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-            return NHentaiParser_1.parseGallery(json_data);
-        });
-    }
-    getChapters(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
+            return createPagedResults({
+                results: NHentaiParser_1.parseSearch({ result: [json_data], num_pages: 1, per_page: 1 }),
+                metadata: {
+                    page: page + 1,
+                    stopSearch: true
+                }
+            });
+        }
+        else {
+            const q = title + ' ' + await language(this.stateManager) + await extraArgs(this.stateManager);
+            const [sort, query] = await sortOrder(q, this.stateManager) ?? ['', q];
             const request = createRequestObject({
-                url: `${API}/gallery/${mangaId}`,
+                url: `${API}/galleries/search?query=${encodeURIComponent(query ?? '')}&sort=${sort}&page=${page}`,
                 method: 'GET'
             });
-            const data = yield this.requestManager.schedule(request, 1);
+            const data = await this.requestManager.schedule(request, 1);
             this.CloudFlareError(data.status);
             const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-            return [NHentaiParser_1.parseGalleryIntoChapter(json_data, mangaId)];
-        });
-    }
-    getChapterDetails(mangaId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: `${API}/gallery/${mangaId}`,
-                method: 'GET'
-            });
-            const data = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(data.status);
-            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-            return NHentaiParser_1.parseChapterDetails(json_data, mangaId);
-        });
-    }
-    getSearchResults(query, metadata) {
-        var _a, _b, _c, _d;
-        return __awaiter(this, void 0, void 0, function* () {
-            const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            const title = (_b = query.title) !== null && _b !== void 0 ? _b : '';
-            if ((_c = metadata === null || metadata === void 0 ? void 0 : metadata.stopSearch) !== null && _c !== void 0 ? _c : false) {
-                return createPagedResults({
-                    results: [],
-                    metadata: {
-                        stopSearch: true
-                    }
-                });
-            }
-            if (/^\d+$/.test(title)) {
-                const request = createRequestObject({
-                    url: `${API}/gallery/${title}`,
-                    method: 'GET'
-                });
-                const data = yield this.requestManager.schedule(request, 1);
-                this.CloudFlareError(data.status);
-                const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-                return createPagedResults({
-                    results: NHentaiParser_1.parseSearch({ result: [json_data], num_pages: 1, per_page: 1 }),
-                    metadata: {
-                        page: page + 1,
-                        stopSearch: true
-                    }
-                });
-            }
-            else {
-                const q = title + ' ' + (yield language(this.stateManager)) + (yield extraArgs(this.stateManager));
-                const [sort, query] = (_d = yield sortOrder(q, this.stateManager)) !== null && _d !== void 0 ? _d : ['', q];
-                const request = createRequestObject({
-                    url: `${API}/galleries/search?query=${encodeURIComponent(query !== null && query !== void 0 ? query : '')}&sort=${sort}&page=${page}`,
-                    method: 'GET'
-                });
-                const data = yield this.requestManager.schedule(request, 1);
-                this.CloudFlareError(data.status);
-                const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-                return createPagedResults({
-                    results: NHentaiParser_1.parseSearch(json_data),
-                    metadata: {
-                        page: page + 1
-                    }
-                });
-            }
-        });
-    }
-    getHomePageSections(sectionCallback) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const section1 = createHomeSection({ id: 'date', title: 'Recent', view_more: true });
-            const section2 = createHomeSection({ id: 'popular-today', title: 'Popular Today', view_more: true });
-            const section3 = createHomeSection({ id: 'popular-week', title: 'Popular Week', view_more: true });
-            const section4 = createHomeSection({ id: 'popular', title: 'Popular All-time', view_more: true });
-            const sections = [section1, section2, section3, section4];
-            for (const section of sections) {
-                sectionCallback(section);
-                const request = createRequestObject({
-                    url: `${API}/galleries/search?query=${encodeURIComponent((yield language(this.stateManager)) + (yield extraArgs(this.stateManager)))}&sort=${section.id}`,
-                    method: 'GET'
-                });
-                const data = yield this.requestManager.schedule(request, 1);
-                this.CloudFlareError(data.status);
-                const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-                section.items = NHentaiParser_1.parseSearch(json_data);
-                sectionCallback(section);
-            }
-        });
-    }
-    getViewMoreItems(homepageSectionId, metadata) {
-        var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            let page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 1;
-            const request = createRequestObject({
-                url: `${API}/galleries/search?query=${encodeURIComponent((yield language(this.stateManager)) + (yield extraArgs(this.stateManager)))}&sort=${homepageSectionId}&page=${page}`,
-                method: 'GET'
-            });
-            const data = yield this.requestManager.schedule(request, 1);
-            this.CloudFlareError(data.status);
-            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
-            page++;
             return createPagedResults({
                 results: NHentaiParser_1.parseSearch(json_data),
                 metadata: {
-                    page: page
+                    page: page + 1
                 }
             });
+        }
+    }
+    async getHomePageSections(sectionCallback) {
+        const section1 = createHomeSection({ id: 'date', title: 'Recent', view_more: true });
+        const section2 = createHomeSection({ id: 'popular-today', title: 'Popular Today', view_more: true });
+        const section3 = createHomeSection({ id: 'popular-week', title: 'Popular Week', view_more: true });
+        const section4 = createHomeSection({ id: 'popular', title: 'Popular All-time', view_more: true });
+        const sections = [section1, section2, section3, section4];
+        for (const section of sections) {
+            sectionCallback(section);
+            const request = createRequestObject({
+                url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=${section.id}`,
+                method: 'GET'
+            });
+            const data = await this.requestManager.schedule(request, 1);
+            this.CloudFlareError(data.status);
+            const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+            section.items = NHentaiParser_1.parseSearch(json_data);
+            sectionCallback(section);
+        }
+    }
+    async getViewMoreItems(homepageSectionId, metadata) {
+        let page = metadata?.page ?? 1;
+        const request = createRequestObject({
+            url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=${homepageSectionId}&page=${page}`,
+            method: 'GET'
+        });
+        const data = await this.requestManager.schedule(request, 1);
+        this.CloudFlareError(data.status);
+        const json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data;
+        page++;
+        return createPagedResults({
+            results: NHentaiParser_1.parseSearch(json_data),
+            metadata: {
+                page: page
+            }
         });
     }
     getCloudflareBypassRequest() {
@@ -661,12 +636,10 @@ class NHLanguagesClass {
         return this.Languages.map(Language => Language.NHCode);
     }
     getName(NHCode) {
-        var _a, _b;
-        return (_b = (_a = this.Languages.filter(Language => Language.NHCode == NHCode)[0]) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : 'Unknown';
+        return this.Languages.filter(Language => Language.NHCode == NHCode)[0]?.name ?? 'Unknown';
     }
     getPBCode(NHCode) {
-        var _a, _b;
-        return (_b = (_a = this.Languages.filter(Language => Language.NHCode == NHCode)[0]) === null || _a === void 0 ? void 0 : _a.PBCode) !== null && _b !== void 0 ? _b : paperback_extensions_common_1.LanguageCode.UNKNOWN;
+        return this.Languages.filter(Language => Language.NHCode == NHCode)[0]?.PBCode ?? paperback_extensions_common_1.LanguageCode.UNKNOWN;
     }
     getDefault() {
         return this.Languages.filter(Language => Language.default).map(Language => Language.NHCode);
@@ -719,8 +692,7 @@ class NHSortOrderClass {
         return this.SortOrders.map(SortOrder => SortOrder.NHCode);
     }
     getName(NHCode) {
-        var _a, _b;
-        return (_b = (_a = this.SortOrders.filter(SortOrder => SortOrder.NHCode == NHCode)[0]) === null || _a === void 0 ? void 0 : _a.name) !== null && _b !== void 0 ? _b : 'Unknown';
+        return this.SortOrders.filter(SortOrder => SortOrder.NHCode == NHCode)[0]?.name ?? 'Unknown';
     }
     getDefault() {
         return this.SortOrders.filter(SortOrder => SortOrder.default).map(SortOrder => SortOrder.NHCode);
@@ -736,8 +708,7 @@ const paperback_extensions_common_1 = require("paperback-extensions-common");
 const NHentaiHelper_1 = require("./NHentaiHelper");
 const typeMap = { 'j': 'jpg', 'p': 'png', 'g': 'gif' };
 const typeOfImage = (image) => {
-    var _a;
-    return (_a = typeMap[image.t]) !== null && _a !== void 0 ? _a : '';
+    return typeMap[image.t] ?? '';
 };
 const getArtist = (gallery) => {
     const tags = gallery.tags;
@@ -821,32 +792,20 @@ exports.parseGalleryIntoChapter = parseGalleryIntoChapter;
 
 },{"./NHentaiHelper":49,"paperback-extensions-common":5}],51:[function(require,module,exports){
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetSettings = exports.settings = exports.getSortOrders = exports.getExtraArgs = exports.getLanguages = void 0;
 const NHentaiHelper_1 = require("./NHentaiHelper");
-const getLanguages = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    return (_a = (yield stateManager.retrieve('languages'))) !== null && _a !== void 0 ? _a : NHentaiHelper_1.NHLanguages.getDefault();
-});
+const getLanguages = async (stateManager) => {
+    return await stateManager.retrieve('languages') ?? NHentaiHelper_1.NHLanguages.getDefault();
+};
 exports.getLanguages = getLanguages;
-const getExtraArgs = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
-    return (_b = (yield stateManager.retrieve('extra_args'))) !== null && _b !== void 0 ? _b : '';
-});
+const getExtraArgs = async (stateManager) => {
+    return await stateManager.retrieve('extra_args') ?? '';
+};
 exports.getExtraArgs = getExtraArgs;
-const getSortOrders = (stateManager) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
-    return (_c = (yield stateManager.retrieve('sort_order'))) !== null && _c !== void 0 ? _c : NHentaiHelper_1.NHSortOrders.getDefault();
-});
+const getSortOrders = async (stateManager) => {
+    return await stateManager.retrieve('sort_order') ?? NHentaiHelper_1.NHSortOrders.getDefault();
+};
 exports.getSortOrders = getSortOrders;
 const settings = (stateManager) => {
     return createNavigationButton({
@@ -854,14 +813,14 @@ const settings = (stateManager) => {
         value: '',
         label: 'Content Settings',
         form: createForm({
-            onSubmit: (values) => __awaiter(void 0, void 0, void 0, function* () {
-                yield Promise.all([
+            onSubmit: async (values) => {
+                await Promise.all([
                     stateManager.store('languages', values.languages),
                     stateManager.store('sort_order', values.sort_order),
                     stateManager.store('extra_args', values.extra_args.replace(/[“”‘’]/g, '"')),
                 ]);
-            }),
-            validate: () => __awaiter(void 0, void 0, void 0, function* () { return true; }),
+            },
+            validate: async () => true,
             sections: () => {
                 return Promise.resolve([
                     createSection({
@@ -872,35 +831,33 @@ const settings = (stateManager) => {
                                 exports.getLanguages(stateManager),
                                 exports.getSortOrders(stateManager),
                                 exports.getExtraArgs(stateManager),
-                            ]).then((values) => __awaiter(void 0, void 0, void 0, function* () {
-                                return [
-                                    createSelect({
-                                        id: 'languages',
-                                        label: 'Languages',
-                                        options: NHentaiHelper_1.NHLanguages.getNHCodeList(),
-                                        displayLabel: option => NHentaiHelper_1.NHLanguages.getName(option),
-                                        value: values[0],
-                                        allowsMultiselect: false,
-                                        minimumOptionCount: 1,
-                                    }),
-                                    createSelect({
-                                        id: 'sort_order',
-                                        label: 'Default search sort',
-                                        options: NHentaiHelper_1.NHSortOrders.getNHCodeList(),
-                                        displayLabel: option => NHentaiHelper_1.NHSortOrders.getName(option),
-                                        value: values[1],
-                                        allowsMultiselect: false,
-                                        minimumOptionCount: 1,
-                                    }),
-                                    createInputField({
-                                        id: 'extra_args',
-                                        label: 'Additional arguments',
-                                        placeholder: 'woman -lolicon -shotacon -yaoi',
-                                        maskInput: false,
-                                        value: values[2],
-                                    })
-                                ];
-                            }));
+                            ]).then(async (values) => [
+                                createSelect({
+                                    id: 'languages',
+                                    label: 'Languages',
+                                    options: NHentaiHelper_1.NHLanguages.getNHCodeList(),
+                                    displayLabel: option => NHentaiHelper_1.NHLanguages.getName(option),
+                                    value: values[0],
+                                    allowsMultiselect: false,
+                                    minimumOptionCount: 1,
+                                }),
+                                createSelect({
+                                    id: 'sort_order',
+                                    label: 'Default search sort',
+                                    options: NHentaiHelper_1.NHSortOrders.getNHCodeList(),
+                                    displayLabel: option => NHentaiHelper_1.NHSortOrders.getName(option),
+                                    value: values[1],
+                                    allowsMultiselect: false,
+                                    minimumOptionCount: 1,
+                                }),
+                                createInputField({
+                                    id: 'extra_args',
+                                    label: 'Additional arguments',
+                                    placeholder: 'woman -lolicon -shotacon -yaoi',
+                                    maskInput: false,
+                                    value: values[2],
+                                })
+                            ]);
                         }
                     })
                 ]);
@@ -914,13 +871,13 @@ const resetSettings = (stateManager) => {
         id: 'reset',
         label: 'Reset to Default',
         value: '',
-        onTap: () => __awaiter(void 0, void 0, void 0, function* () {
-            yield Promise.all([
+        onTap: async () => {
+            await Promise.all([
                 stateManager.store('languages', null),
                 stateManager.store('sort_order', null),
                 stateManager.store('extra_args', null),
             ]);
-        })
+        }
     });
 };
 exports.resetSettings = resetSettings;
