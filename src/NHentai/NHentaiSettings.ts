@@ -11,7 +11,7 @@ import {
     NHSortOrders,
 } from './NHentaiHelper'
 
-import rUserAgent from 'random-useragent'
+import rUserAgent from '../lib/rand-ua/index'
 
 export const getLanguages = async (stateManager: SourceStateManager): Promise<string[]> => {
     return (await stateManager.retrieve('languages') as string[]) ?? NHLanguages.getDefault()
@@ -64,7 +64,7 @@ export const settings = (stateManager: SourceStateManager, requestManager: Reque
 
                                         // Use set UserAgent unless one is manually set in the source
                                         if (typeof source.userAgent !== 'string') {
-                                            stateManager.store('userAgent', rUserAgent.getRandom())
+                                            stateManager.store('userAgent', rUserAgent('desktop'))
                                         }
 
                                     } catch (error) {
