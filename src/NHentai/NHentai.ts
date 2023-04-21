@@ -36,7 +36,7 @@ const NHENTAI_URL = 'https://nhentai.net'
 const API = NHENTAI_URL + '/api'
 
 export const NHentaiInfo: SourceInfo = {
-    version: '3.2.3',
+    version: '3.2.5',
     name: 'nhentai',
     icon: 'icon.png',
     author: 'NotMarek',
